@@ -2,14 +2,18 @@
 #include<deque>
 #include<assert.h>
 #include<JuceHeader.h>
+#include<chrono>
 
-// set these macros properly!
+/////////////////////////////////
+// set these macros properly!///
+/////////////////////////////////
 #define NUM_HEADER_BITS 8
 #define NUM_DEST_BITS 3
 #define NUM_SRC_BITS 3
 #define NUM_TYPE_BITS 2
 #define MY_MAC_ADDRESS 0b001
 #define RECEND_THRESHOLD 5
+#define TIME_OUT_THRESHOLD 1e-2
 
 int transmit(float *outBuffer, const std::vector<int> &data_to_transmit, int data_index, int num_data);
 int receive(const float *inBuffer, float *outBuffer, int num_samples, std::deque<int> &received_data,
@@ -18,6 +22,7 @@ int receive(const float *inBuffer, float *outBuffer, int num_samples, std::deque
 enum class MAC_States_Set {
     Idle,
     CarrierSense,
+    TxFrame_ACK,
     RxFrame,
     TxFrame,
     TxACK,
@@ -58,21 +63,38 @@ private:
     int mac_address{ MY_MAC_ADDRESS };
     // array of pointers
     juce::Label *mes[5]{ nullptr };
-    // recend times
+    // recend the number of sending times
     int recend{ 0 };
-    
-
+    // ack time out detect
+    std::chrono::time_point<std::chrono::steady_clock> beforeTime = std::chrono::steady_clock::now();
+    bool timeOut_valid{ false };
 };
 
 void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_samples) {
     // deal with every state
+
+    ///   This is unfinished.
     if (macState == MAC_States_Set::Idle) {
-        // detect preamble
+        // detect preamble, invoke receiver()
         if (receive(inBuffer, outBuffer, num_samples, received_data, 0) == 1) {
             macState = MAC_States_Set::RxFrame;
             return;
         }
+        // ack time out
+        if (timeOut_valid) {
+            auto currentTime = std::chrono::steady_clock::now();
+            double duration_millsecond = std::chrono::duration<double, std::milli>(currentTime - beforeTime).count();
+            if (duration_millsecond > TIME_OUT_THRESHOLD) {
+                macState = MAC_States_Set::ACKTimeout;
+                return;
+            }
+        }
+        // send data
+        if (TxPending) {
+            // TODO: invoke transmit()
+        }
     }
+    ///
     else if (macState == MAC_States_Set::RxFrame) {
         /////////////// TODO : fix this fuction call. /////////////////
         if (receiving_info.num_received_data > 9999)
@@ -107,7 +129,6 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
         // process data
         if (receiving_info.frameType == Frame_Type::data) {
             
-
             // TODO: wirte to file buffer
         }
         else if (receiving_info.frameType == Frame_Type::ack) {
@@ -117,19 +138,26 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
         // type error
         assert(receiving_info.frameType != Frame_Type::unknown);        
     } // end of RxFrame state
-    // send data to other computers
-    else if (macState == MAC_States_Set::TxFrame) {
-
+    /// send ack to other computers
+    else if (macState == MAC_States_Set::TxFrame_ACK) {
+        // TODO
     }
+    ///
     else if (macState == MAC_States_Set::CarrierSense) {
-
+        // TODO
     }
+    /// send data to other computers
+    else if (macState == MAC_States_Set::TxFrame) {
+        // TODO
+    }
+    ///
     else if (macState == MAC_States_Set::ACKTimeout) {
         if (recend > RECEND_THRESHOLD) {
             macState = MAC_States_Set::LinkError;
             return;
         }
     }
+    /// exit with error
     else if (macState == MAC_States_Set::LinkError) {
         assert(0);
     }
