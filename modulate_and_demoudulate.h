@@ -7,13 +7,14 @@
 
   ==============================================================================
 */
-
+#pragma once
 #include "transmitter.h"
 #define CRC_BITS 8
 #define DEST_BITS 3
 #define SRC_BITS 3
 #define TYPE_BITS 2
 constexpr const int OVERHEAD_SYMBOLS = (CRC_BITS + DEST_BITS + SRC_BITS + TYPE_BITS) / BITS_PER_SYMBOL;
+
 class Modulater {
 
 public:
@@ -48,6 +49,7 @@ public:
                 }
             }
         }
+        return buffer;
     }
 };
 class Demoudulator {
