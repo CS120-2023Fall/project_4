@@ -62,22 +62,6 @@ public:
     void refresh_MAC(const float *inBuffer, float *outBuffer, int num_samples);
 
 private:
-    //enum class Frame_Type {
-    //    unknown = 0 ,
-    //    ack = 0b01,
-    //    data = 0b10
-    //};
-    // after detect preamble, note receiving information
-    //struct {
-    //    bool header_removed{ false };
-    //    bool ready_to_rm_header{ false };
-    //    int dest{ -1 };
-    //    int src{ -1 };
-    //    Frame_Type frameType{ Frame_Type::unknown };
-    //    // in one packet
-    //    int num_received_data{ 0 };
-    //} receiving_info;
-
     int mac_address{ MY_MAC_ADDRESS };
     // array of pointers to send message
     juce::Label *mes[5]{ nullptr };
@@ -174,6 +158,9 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
     }
     /// TxFrame
     else if (macState == MAC_States_Set::TxFrame) {
+         // header (dest | src | type), (num packet order)
+         //std::vector<bool> header = {}
+
          bool feedback = tranmitter->Add_one_packet(inBuffer, outBuffer, num_samples, Tx_frame_status::Tx_data);
          // transmition finishes
          if (!feedback) {
