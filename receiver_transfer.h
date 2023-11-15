@@ -37,6 +37,9 @@ enum  Rx_Frame_Received_Type {
 
 class Receiver {
 public:
+    Receiver() {
+        Initialize();
+    }
     std::vector<double> receive_buffer;
     std::deque<double> sync_buffer;
     std::vector<double> decode_buffer;
@@ -241,7 +244,7 @@ public:
                 unsigned int symbol = CRC_symbols[symbol_index_start + j];
                 auto carrier = (symbol & 1) == 1 ? carrier_waves_1 : carrier_waves_0;//using the last bit to determine psk
                 float amplitude = max_amplitude * float((symbol >> 1) + 1) / ask_num;
-                for (int k = 0; k < samples_per_bit; j++) {
+                for (int k = 0; k < samples_per_bit; k++) {
                     packet_sequences.push_back(amplitude * carrier[k]);
                 }
             }

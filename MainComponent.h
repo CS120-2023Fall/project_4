@@ -56,7 +56,7 @@ MainComponent::MainComponent() {
         && !juce::RuntimePermissions::isGranted(juce::RuntimePermissions::recordAudio)) {
         juce::RuntimePermissions::request(juce::RuntimePermissions::recordAudio,
             [&](bool granted) { setAudioChannels(granted ? 2 : 0, 2); });
-        // 不应该进这里
+
         exit(55);
     }
     else {

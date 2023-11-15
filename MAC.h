@@ -36,12 +36,12 @@ public:
         for (int i = 0; i < num_labels; ++i) {
             mes[i] = labels[i];
         }
-    };
+    }
 
-    // update MAC states
-    void refresh_MAC(const float *inBuffer, float *outBuffer, int num_samples);
-    // prepare for next packet
-    //void reset_receiving_info();
+    ~MAC_Layer() {
+        delete receiver;
+        delete tranmitter;
+    }
 
 private:
     enum class MAC_States_Set {
@@ -58,7 +58,8 @@ private:
 public:
     MAC_States_Set macState{MAC_States_Set::Idle};
     bool TxPending{ true };
-    std::deque<int> received_data;
+    //std::deque<int> received_data;
+    void refresh_MAC(const float *inBuffer, float *outBuffer, int num_samples);
 
 private:
     //enum class Frame_Type {

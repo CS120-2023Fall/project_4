@@ -203,10 +203,10 @@ public:
         generate_carrier();//generate carrier_0 and carrier_1
         generate_length();
         generate_preamble();//generate the preamble
-        generate_crc();
-        generate_packet_sequences();//add the preamble and data together
-        Write_symbols();// for debug
-        generate_knots();//to determine the amplitude range 
+        //generate_crc();
+        //generate_packet_sequences();//add the preamble and data together
+       // Write_symbols();// for debug
+        //generate_knots();//to determine the amplitude range 
 
     }
     void generate_knots() {
@@ -378,9 +378,9 @@ public:
     std::vector<double>knots;
     std::vector<double> transmittion_buffer;
 };
-Transmitter_with_wire default_trans_wire("INPUT.bin", default_sample_rate);
+Transmitter_with_wire default_trans_wire("D:/CS120Project/project2/Builds/VisualStudio2022/INPUT.bin", default_sample_rate);
 
-Transmitter default_trans("INPUT.txt", default_sample_rate);
+Transmitter default_trans("D:/CS120Project/project2/Builds/VisualStudio2022/INPUT.txt", default_sample_rate);
 
 
 #endif
