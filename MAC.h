@@ -24,6 +24,30 @@ enum class MAC_States_Set {
     ACKTimeout,
     LinkError
 };
+class Receiver {
+public:
+    std::vector<double> receive_buffer;
+    std::vector<double> sync_buffer;
+    std::vector<double> decode_buffer;
+    std::vector<double> preamble = default_trans.preamble;
+    std::vector<double> carrier_1 = default_trans_wire.carreir_waves_1;
+        int start_index = -1;
+    unsigned int received_packet = 0;
+    double sync_max=0;
+    double receive_power = 0;
+    void Initialize() {
+        receive_buffer.clear();
+        sync_buffer.clear();
+        for (int i = 0; i < PREAMBLE_SIZE; i++) {
+            sync_buffer.push_back(0);
+        }
+        start_index = -1;
+
+    }
+    bool detect_frame(const float* inBuffer, float* outBuffer, int num_samples)
+
+
+};
 
 class MAC_Layer {
 public:
@@ -78,6 +102,8 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
         if (receiving_info.num_received_data > 9999)
             receive();
         else {
+
+
 
         }
         /////////////////////////////////
