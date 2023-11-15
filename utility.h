@@ -1,4 +1,3 @@
-#pragma once
 #include <string>
 #include <vector>
 #include <iostream>
@@ -152,6 +151,14 @@ inline unsigned int from_bits_vector_to_unsigned_int(const std::vector<bool> &bi
 		l = l >> 1;
 	}
 	return sum;
+}
+std::vector<bool> from_uint8_t_to_bits_vector(uint8_t data) {
+	std::vector<bool> bits;
+	for (int i = 7; i >= 0; i--) {
+		bool bit = bool((data >> i) & 1);
+		bits.push_back(bit);
+	}
+	return bits;
 }
 std::vector<unsigned int> translate_from_bits_vector_to_unsigned_int_vector(const std::vector<bool> &bits, unsigned int num)//convert bits to unsigned int with num seperation
 {

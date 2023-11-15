@@ -19,7 +19,7 @@ MainComponent::MainComponent()
     else
     {
         // Specify the number of input and output channels that we want to open
-        setAudioChannels (2, 2);
+        setAudioChannels (2, 1);
     }
 
     /////////////////////////////////////////////////////////////
@@ -27,14 +27,16 @@ MainComponent::MainComponent()
     stopButton.setButtonText("Stop");
     stopButton.setSize(60, 40);
     stopButton.setCentrePosition(120, 200);
-    stopButton.onClick = [this] {juceState = juce_States_Set::STOP; };
+    stopButton.onClick = [this] {juceState = juce_States_Set::STOP; 
+    mes0.setText("stop", juce::NotificationType::dontSendNotification); };
     addAndMakeVisible(stopButton);
     
     // transmit and receive button
     T_and_R_Button.setButtonText("transmit and receive");
     T_and_R_Button.setSize(110, 40);
     T_and_R_Button.setCentrePosition(220, 200);
-    T_and_R_Button.onClick = [this] {juceState = juce_States_Set::T_AND_R; };
+    T_and_R_Button.onClick = [this] {juceState = juce_States_Set::T_AND_R;
+    mes0.setText("transmit and receive", juce::NotificationType::dontSendNotification); };
     addAndMakeVisible(T_and_R_Button);
 
     // message
@@ -42,9 +44,12 @@ MainComponent::MainComponent()
     mes0.setSize(400, 40);
     addAndMakeVisible(mes0);
 
-    //mes1.setText("addition", juce::NotificationType::dontSendNotification);
-    //mes0.setSize(400, 60);
-    //addAndMakeVisible(mes1);
+    mes1.setText("addition", juce::NotificationType::dontSendNotification);
+    mes0.setSize(400, 60);
+    addAndMakeVisible(mes1);
+
+    juce::Label *tmp[2] = { &mes0, &mes1 };
+    mac = MAC_Layer(tmp, 2);
 
 
     formatManager.registerBasicFormats();       // [1]
@@ -99,9 +104,19 @@ void MainComponent::getNextAudioBlock (const juce::AudioSourceChannelInfo& buffe
         } // [2]
         auto *inBuffer = bufferToFill.buffer->getReadPointer(inputChannelNum, bufferToFill.startSample);
         auto *outBuffer = bufferToFill.buffer->getWritePointer(channel, bufferToFill.startSample);
+        int num_samples = bufferToFill.buffer->getNumSamples();
 
-        // TODO: pass command to fuctional objects
-
+        //////////////////////////////////////////////////////////
+        ///// TODO: set a signal to stop automatically///////////
+        ///////////////////////////////////////////////////////
+        if (juceState == juce_States_Set::T_AND_R) {
+            mac.TxPending = true;
+            mac.refresh_MAC(inBuffer, outBuffer, num_samples);
+        }
+        if (false) {
+            mac.TxPending = false;
+            stopButton.triggerClick();
+        }
 
         break;
     }
