@@ -64,7 +64,7 @@ private:
 
 public:
     MAC_States_Set macState{MAC_States_Set::Idle};
-    bool TxPending{ true };
+    bool TxPending{ false };
     std::deque<int> received_data;
 
 private:

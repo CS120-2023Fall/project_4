@@ -152,7 +152,7 @@ void MainComponent::getNextAudioBlock(const juce::AudioSourceChannelInfo &buffer
         ///// TODO: set a signal to stop automatically///////////
         ///////////////////////////////////////////////////////
         if (juceState == juce_States_Set::T_AND_R) {
-            mac.TxPending = true;
+            mac.TxPending = false;
             mac.refresh_MAC(inBuffer, outBuffer, num_samples);
         }
         if (false) {
