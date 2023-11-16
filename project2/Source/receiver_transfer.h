@@ -70,7 +70,7 @@ public:
         // 2 VALID_DATA
     Rx_Frame_Received_Type decode_one_packet(const float *inBuffer, float *outBuffer, int num_samples) {
         for (int i = 0; i < num_samples; i++) {
-
+            outBuffer[i] = 0;
             decode_buffer.push_back(inBuffer[i]);
             if (decode_buffer.size() == samples_per_symbol * (PACKET_DATA_SIZE + OVERHEAD_SYMBOLS)) {
                 std::vector<unsigned int >symbols = demoudulator->Demodulate(decode_buffer, 0);//demoudulate them all
@@ -318,7 +318,7 @@ public:
                 current_packet.push_back(packet_sequences[index]);
             }
             std::vector<double> mac_head = generate_the_Mac_head(Frame_Type::data);
-            current_packet = insert(current_packet, mac_head, PREAMBLE_SIZE + CRC_SYMBOLS * samples_per_symbol);
+           // current_packet = insert(current_packet, mac_head, PREAMBLE_SIZE + CRC_SYMBOLS * samples_per_symbol);
             for (int i = 0; i < current_packet.size(); i++) {
                 transmittion_buffer.push_back(current_packet[i]);
             }

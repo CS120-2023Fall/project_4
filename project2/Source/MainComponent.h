@@ -69,7 +69,7 @@ MainComponent::MainComponent() {
     stopButton.setButtonText("Stop");
     stopButton.setSize(60, 40);
     stopButton.setCentrePosition(120, 200);
-    stopButton.onClick = [this] {juceState = juce_States_Set::STOP;
+    stopButton.onClick = [this] {juceState = juce_States_Set::STOP; mac.STOP();
     mes0.setText("stop", juce::NotificationType::dontSendNotification); };
     addAndMakeVisible(stopButton);
 

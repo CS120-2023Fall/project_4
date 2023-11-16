@@ -14,8 +14,6 @@
 #define END_FRAME_SIZE 48 //the number of empty zero between packets
 
 
-#ifndef TRANSMITTER_CONSTANTS
-#define TRANSMITTER_CONSTANTS
 
 const double pi = juce::MathConstants<double>::pi;
 bool psk_mode = true;
@@ -32,8 +30,7 @@ constexpr const double freq_up_preamble = 1000;
 constexpr const double freq_down_preamble = 1000;
 constexpr const int default_sample_rate = 48000;
 constexpr const int samples_per_bit = default_sample_rate / 1000 / 2;
-
-#endif // TRANSMITTER_CONSTANTS
+// TRANSMITTER_CONSTANTS
 
 
 class Transmitter {
@@ -179,15 +176,12 @@ public:
 };
 // a transmitter_with_psk_ask
 
-#ifndef CRC_CONSTANTS
-#define CRC_CONSTANTS
 
 #define BITS_PER_SYMBOL 4// the symbol represent how many bit
 float max_amplitude = 1;
 bool check_crc = false;//the crc is 8 bit 
 constexpr const unsigned int CRC_SYMBOL_SIZE = 8 / BITS_PER_SYMBOL;
-
-#endif // !CRC_CONSTANTS
+ // !CRC_CONSTANTS
 
 
 
