@@ -13,7 +13,8 @@
 #define DEST_BITS 3
 #define SRC_BITS 3
 #define TYPE_BITS 2
-constexpr const int OVERHEAD_SYMBOLS = (CRC_BITS + DEST_BITS + SRC_BITS + TYPE_BITS) / BITS_PER_SYMBOL;
+#define PACKET_NUM_BITS 8//MAC LAYER need it
+constexpr const int OVERHEAD_SYMBOLS = (CRC_BITS+ PACKET_NUM_BITS + DEST_BITS + SRC_BITS + TYPE_BITS) / BITS_PER_SYMBOL;//overhead of CRC +PACKET_NUM+DEST+SRC+TYPE
 
 class Modulater {
 
@@ -56,7 +57,11 @@ class Demoudulator {
 public:
     std::vector<double> carrier_waves_0 = default_trans_wire.carrier_waves_0;
     std::vector<double> carrier_waves_1 = default_trans_wire.carrier_waves_1;
+    std::vector<double> max_vector;
     double amplitude_step = default_trans_wire.amplitude_step;
+    void Write_max() {
+        Write("max_vector.txt", max_vector);
+    }
     std::vector<unsigned int > Demodulate(const std::vector<double >& decode_buffer,int start_index,int num_symbols=-1 ) {
         std::vector<unsigned int> symbols;
         if (num_symbols == -1) {//decode them all
@@ -81,7 +86,7 @@ public:
 
     bool check_crc_one_packet(const std::vector<unsigned int>& symbols,int start_index=0) {//check the packet if it satisfy crc_check then return true else return false
         unsigned int crc_offset = 8 / BITS_PER_SYMBOL;
-        unsigned int data_offset = (CRC_BITS + DEST_BITS + SRC_BITS + TYPE_BITS) / BITS_PER_SYMBOL;
+        unsigned int data_offset = (CRC_BITS +PACKET_NUM_BITS+ DEST_BITS + SRC_BITS + TYPE_BITS) / BITS_PER_SYMBOL;
         std::vector<unsigned int > data_symbols=vector_from_start_to_end(symbols,start_index+data_offset,start_index+data_offset+PACKET_DATA_SIZE);//received data slice
         std::vector<unsigned int> crc_symbols = vector_from_start_to_end(symbols,start_index,start_index+crc_offset);//received symbols
         std::vector<bool> data_bits = from_symbols_to_bits(data_symbols,BITS_PER_SYMBOL);// translate the packet symbols to data
@@ -120,6 +125,7 @@ public:
             }
         }
         max_amplitude /= scale;
+        max_vector.push_back(max_amplitude);
         if (sum > 0) {
             number = default_trans_wire.demodulate(max_amplitude);
             number = (number << 1) + 1;

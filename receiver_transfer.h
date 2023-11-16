@@ -13,8 +13,12 @@
 /// //////////////////////////
 #define QUIET_THRESHOLD 0.1
 constexpr const int maximum_packet = 50000 / PACKET_DATA_SIZE / BITS_PER_SYMBOL;
+constexpr const int CRC_SYMBOLS = CRC_BITS / BITS_PER_SYMBOL;//number of symbols in crc
 std::vector<double > empty=std::vector<double>(0);
 std::deque<double> empty_deque=std::deque<double>(0,0.0);
+constexpr const int samples_per_symbol = samples_per_bit;
+constexpr const int MAC_PACKET_SAMPLES = PREAMBLE_SIZE + (OVERHEAD_SYMBOLS + PACKET_DATA_SIZE) * samples_per_symbol;//how many samples in a mac packet
+constexpr const int PHY_PACKET_SAMPLES = PREAMBLE_SIZE + (CRC_SYMBOLS+ PACKET_DATA_SIZE ) * samples_per_symbol;//how many samples in a phy packet
 //enum class MAC_States_Set {
 //    Idle,
 //    CarrierSense,
@@ -50,6 +54,13 @@ public:
         demoudulator = new Demoudulator();
 
     }
+    void Write_symbols()
+    {
+        std::vector<bool>bits = from_symbols_to_bits(symbol_code,BITS_PER_SYMBOL);
+        Write("project2_bits_receiver.txt", bits);
+        demoudulator->Write_max();
+
+    }
         // inBuffer: input ,outBuffer: not used ,num_samples: sample from input
         // try to read the num_samples sample from inBuffer,if the accumulated buffer still cannot achieve a packet,return still_receiving,if it satisfies a packet samples
         // return whether it is valid_ack,valid_data,or error,if valid_data,push the translated data symbols into symbol_code
@@ -61,13 +72,14 @@ public:
         for (int i = 0; i < num_samples; i++) {
 
             decode_buffer.push_back(inBuffer[i]);
-            if (decode_buffer.size() == samples_per_bit * (PACKET_DATA_SIZE + OVERHEAD_SYMBOLS)) {
+            if (decode_buffer.size() == samples_per_symbol * (PACKET_DATA_SIZE + OVERHEAD_SYMBOLS)) {
                 std::vector<unsigned int >symbols = demoudulator->Demodulate(decode_buffer, 0);//demoudulate them all
-                if (demoudulator->check_crc_one_packet(symbols, 0)) //valid 
+                if (demoudulator->check_crc_one_packet(symbols, 0)) //valid ERROR FREE
 
                 {
                     std::vector<unsigned int> overhead = vector_from_start_to_end(symbols, 0, OVERHEAD_SYMBOLS);
                     std::vector<bool> overhead_bits = from_symbols_to_bits(overhead, BITS_PER_SYMBOL);
+                    unsigned int packet_num = from_bits_vector_to_unsigned_int(vector_from_start_to_end(overhead_bits, CRC_BITS, CRC_BITS + PACKET_NUM_BITS));
                     int type = ((int)overhead_bits[overhead_bits.size() - 2]) * 2 + (int)overhead_bits[overhead_bits.size() - 1];
                     if (Frame_Type(type) == Frame_Type::ack) {
                         decode_buffer.clear();
@@ -75,8 +87,10 @@ public:
                     }
                     else {
                         int offset = OVERHEAD_SYMBOLS;
-                        for (int i = offset; i < symbols.size(); i++) {
-                            symbol_code.push_back(symbols[i]);
+                        if (packet_num >= received_packet) {//not repeat then push them all
+                            for (int i = offset; i < symbols.size(); i++) {
+                                symbol_code.push_back(symbols[i]);
+                            }
                         }
                         decode_buffer.clear();
                         return valid_data;
@@ -99,7 +113,6 @@ public:
         // detect the preamble if  preamble detected return true,else false
             //after detecting it auto enter the decode_state and initialize the receiver(decode_buffer will have 200samples)    
     {
-        receive_buffer.push_back(0.0);
         for (int i = 0; i < num_samples; i++) {
             outBuffer[i] = 0;
             double current_sample;
@@ -180,9 +193,8 @@ enum Tx_frame_status {
     Tx_ack = 0,
     Tx_data = 1
 };
-constexpr const int samples_per_symbol = samples_per_bit;
-constexpr const int MAC_PACKET_SAMPLES = PREAMBLE_SIZE + (OVERHEAD_SYMBOLS + PACKET_DATA_SIZE) * samples_per_symbol;
-constexpr const int PHY_PACKET_SAMPLES = PREAMBLE_SIZE + PACKET_DATA_SIZE * samples_per_symbol;
+
+
 class Transfer {
 public:
     Transfer() {
@@ -285,26 +297,62 @@ public:
         // inBuffer ,outBuffer and num_samples is not used,status indicate ack or data you want to add,it will add to the transmittion_buffer 
         //if all the packet successfully transmitted return false,else add the data frame
     {
+
+        std::vector<double> current_packet;
         if (status == Tx_ack) {
             //modulate a ack
             for (int i = 0; i < ack_packet.size(); i++) {
-
-                transmittion_buffer.push_back(ack_packet[i]);
+                
+                current_packet.push_back(ack_packet[i]);
             }
+            std::vector<double> mac_head = generate_the_Mac_head(Frame_Type::ack);
+            current_packet = insert(current_packet, mac_head, PREAMBLE_SIZE + CRC_SYMBOLS * samples_per_symbol);
+            for (int i = 0; i < current_packet.size(); i++) {
+                transmittion_buffer.push_back(current_packet[i]);
+            }
+
         }
         else {
             if (transmitted_packet >= maximum_packet)return false;
             for (int index = transmitted_packet * PHY_PACKET_SAMPLES; index < (transmitted_packet + 1) * PHY_PACKET_SAMPLES; index++) {
-                transmittion_buffer.push_back(packet_sequences[index]);
+                current_packet.push_back(packet_sequences[index]);
+            }
+            std::vector<double> mac_head = generate_the_Mac_head(Frame_Type::data);
+            current_packet = insert(current_packet, mac_head, PREAMBLE_SIZE + CRC_SYMBOLS * samples_per_symbol);
+            for (int i = 0; i < current_packet.size(); i++) {
+                transmittion_buffer.push_back(current_packet[i]);
             }
         }
         return true;
     }
+    std::vector<double> generate_the_Mac_head(Frame_Type status) {
+        std::vector<bool>bits;
+        std::vector<bool> packet_num_bits = from_unsigned_int_to_bits_vector_filled_with_zero(transmitted_packet, 8);
+        std::vector<bool> dest_bits = { 1,1,1 };
+        std::vector<bool> src_bits = { 0,0,0 };
+        std::vector<bool> type_bits;
+        if (status == Frame_Type::ack) {
+            type_bits = { 0,1 };
+        }
+        else {
+            type_bits = { 1,0 };
+        }
+        bits = connect(bits, packet_num_bits);
+        bits = connect(bits, dest_bits);
+        bits = connect(bits, src_bits);
+        bits = connect(bits, type_bits);
+        std::vector<double> head = modulater->Modulate(translate_from_bits_vector_to_unsigned_int_vector(bits, BITS_PER_SYMBOL), 0);
+        return head;
+    }
 
-    void Trans(const float *inBuffer, float *outBuffer, int num_samples)//inBuffer is not used,outBuffer is used to read from tranmittion_buffer,and read the num_samples sample
+    bool Trans(const float *inBuffer, float *outBuffer, int num_samples)
+        //inBuffer is not used,outBuffer is used to read from tranmittion_buffer,and read the num_samples sample
+    //trans finished then return true
+    
     {
             for (int i = 0; i < num_samples; i++) {
                 if (transfer_num >= transmittion_buffer.size()) {
+                    return true;
                     outBuffer[i] = 0;
                 }
                 else {
@@ -313,6 +361,6 @@ public:
                     transfer_num++;
                 }
             }
-
+            return false;
     }
 };
