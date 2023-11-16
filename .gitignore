@@ -1,0 +1,10 @@
+.idea/
+x64/
+*.sln
+.vs
+*.vcxproj
+*.filters
+*.user
+JUCE
+JuceLibrarayCode/
+builds

@@ -18,7 +18,7 @@
 #define RECEND_THRESHOLD 8
 // milisecond
 #define ACK_TIME_OUT_THRESHOLD 1e-2
-
+//structure  PREAMBLE+CRC_SYMBOLS+PACKET_NUM_SYMBOLS+DEST+SRC+TYPE
 //enum class Rx_Frame_Received_Type {
 //    still_receiving = -1,
 //    error = 0,
@@ -46,6 +46,9 @@ public:
     void refresh_MAC(const float *inBuffer, float *outBuffer, int num_samples);
     // prepare for next packet
     //void reset_receiving_info();
+    void STOP() {
+        receiver.Write_symbols();
+}
 
 private:
     enum class MAC_States_Set {
@@ -104,7 +107,9 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
     }
 
     // deal with every state
-
+    if (transmitter.transmitted_packet >= maximum_packet) {
+        TxPending = false;
+    }
     /// Idle
     if (macState == MAC_States_Set::Idle) {
         bool tmp = receiver.detect_frame(inBuffer, outBuffer, num_samples);
@@ -119,7 +124,7 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
             // milisecond
             double duration_millsecond = std::chrono::duration<double, std::milli>(currentTime - beforeTime_ack).count();
             if (duration_millsecond > ACK_TIME_OUT_THRESHOLD) {
-                macState = MAC_States_Set::ACKTimeout;
+                macState = MAC_States_Set::ACKTimeout;//resend the package
                 ackTimeOut_valid = false;
                 return;
             }
@@ -146,10 +151,12 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
                 return;
             case Rx_Frame_Received_Type::valid_ack:
                 ackTimeOut_valid = false;
+                transmitter.transmitted_packet += 1;//the next staus transmit the next packet
                 macState = MAC_States_Set::Idle;
                 return;
             case Rx_Frame_Received_Type::valid_data:
                 macState = MAC_States_Set::TxACK;
+                receiver.received_packet += 1;
                 bool feedback = transmitter.Add_one_packet(inBuffer, outBuffer, num_samples, Tx_frame_status::Tx_ack);
 
                 return;             
@@ -157,7 +164,10 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
     }
     /// TxACK
     else if (macState == MAC_States_Set::TxACK) {
-        transmitter.Trans(inBuffer, outBuffer, num_samples);
+        bool finish = transmitter.Trans(inBuffer, outBuffer, num_samples);
+        if (finish) {
+            macState == MAC_States_Set::Idle;
+       }
         return;
     }
     /// CarrierSense
@@ -179,10 +189,11 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
     }
     /// TxFrame
     else if (macState == MAC_States_Set::TxFrame) {
-
-         transmitter.Trans(inBuffer, outBuffer, num_samples);
+        bool finish= transmitter.Trans(inBuffer, outBuffer, num_samples);
          // transmition finishes
-
+        if (finish) {
+            macState = MAC_States_Set::Idle;
+        }
     }
     /// ACKTimeout
     else if (macState == MAC_States_Set::ACKTimeout) {
