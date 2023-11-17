@@ -17,7 +17,7 @@
 #define MY_MAC_ADDRESS 0b001
 #define RECEND_THRESHOLD 8
 // milisecond
-#define ACK_TIME_OUT_THRESHOLD 1e-2
+#define ACK_TIME_OUT_THRESHOLD 100
 //structure  PREAMBLE+CRC_SYMBOLS+PACKET_NUM_SYMBOLS+DEST+SRC+TYPE
 //enum class Rx_Frame_Received_Type {
 //    still_receiving = -1,
