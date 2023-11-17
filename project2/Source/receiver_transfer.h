@@ -11,7 +11,7 @@
 /// //////////////////////////
 ///  set the macros appropriately!!!
 /// //////////////////////////
-#define QUIET_THRESHOLD 1
+#define QUIET_THRESHOLD 4
 constexpr const int maximum_packet = 50000 / PACKET_DATA_SIZE / BITS_PER_SYMBOL;
 constexpr const int CRC_SYMBOLS = CRC_BITS / BITS_PER_SYMBOL;//number of symbols in crc
 std::vector<double > empty=std::vector<double>(0);
