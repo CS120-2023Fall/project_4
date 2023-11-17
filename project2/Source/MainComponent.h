@@ -149,6 +149,13 @@ public:
                 mac.TxPending = false;
                 mac.refresh_MAC(inBuffer, outBuffer, num_samples);
             }
+            else
+            {
+
+                for (int i = 0; i < num_samples; i++) {
+                    outBuffer[i] = 0;
+                }
+            }
             if (false) {
                 mac.TxPending = false;
                 stopButton.triggerClick();
