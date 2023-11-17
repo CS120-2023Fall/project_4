@@ -11,7 +11,7 @@
 /// //////////////////////////
 ///  set the macros appropriately!!!
 /// //////////////////////////
-#define QUIET_THRESHOLD 1
+#define QUIET_THRESHOLD 4
 constexpr const int maximum_packet = 50000 / PACKET_DATA_SIZE / BITS_PER_SYMBOL;
 constexpr const int CRC_SYMBOLS = CRC_BITS / BITS_PER_SYMBOL;//number of symbols in crc
 std::vector<double > empty=std::vector<double>(0);
@@ -201,6 +201,12 @@ public:
     Transfer() {
         generate_ack_packet();
         generate_packet_sequence();
+    }
+    void Initialize() { CRC_symbols.clear();
+        ack_data_symbols.clear();
+        transfer_num = 0;
+        transmittion_buffer.clear();
+        transmitted_packet = 0;
     }
     std::vector<double > transmittion_buffer;
     std::vector<bool>bits = default_trans_wire.bits;

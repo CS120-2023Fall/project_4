@@ -73,8 +73,11 @@ public:
         stopButton.setButtonText("Stop");
         stopButton.setSize(60, 40);
         stopButton.setCentrePosition(120, 200);
-        stopButton.onClick = [this] {juceState = juce_States_Set::STOP; mac.STOP();
-        mes0.setText("stop", juce::NotificationType::dontSendNotification); };
+        stopButton.onClick = [this] {
+          juceState = juce_States_Set::STOP;
+          mac.STOP();
+          mes0.setText("stop", juce::NotificationType::dontSendNotification);
+        };
         addAndMakeVisible(stopButton);
 
         // transmit and receive button
@@ -141,14 +144,17 @@ public:
             int num_samples = bufferToFill.buffer->getNumSamples();
             auto* outBuffer = bufferToFill.buffer->getWritePointer(channel, bufferToFill.startSample);
             if (juceState == juce_States_Set::T_AND_R) {
-                mac.TxPending = false;
+                mac.TxPending = true;
                 mac.refresh_MAC(inBuffer, outBuffer, num_samples);
             }
             if (false) {
                 mac.TxPending = false;
                 stopButton.triggerClick();
             }
-           
+            if (mac.macState == MAC_Layer::MAC_States_Set::LinkError) {
+            
+                stopButton.triggerClick();
+            }   
             break;
         }
     }
