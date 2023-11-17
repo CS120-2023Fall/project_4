@@ -47,9 +47,16 @@ public:
     }
 
     void Initialize() {
+      sync_buffer.clear();
         for (int i = 0; i < PREAMBLE_SIZE; i++) {
             sync_buffer.push_back(0);
         }
+        receive_buffer.clear();
+        receive_power = 0;
+        symbol_code.clear();
+        bits.clear();
+        received_packet = 0;
+        decode_buffer.clear();
         start_index = -1;
         demoudulator = new Demoudulator();
 
