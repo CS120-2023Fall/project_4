@@ -123,7 +123,7 @@ public:
         // detect the preamble if  preamble detected return true,else false
             //after detecting it auto enter the decode_state and initialize the receiver(decode_buffer will have 200samples)    
     {
-
+        bool detected = false;
         for (int i = 0; i < num_samples; i++) {
             outBuffer[i] = 0;
         }
@@ -158,8 +158,12 @@ public:
             }
             else {
                 // if (receive_num - start_index >= 240 && start_index > 0)
+
                 if (receive_buffer.size() - start_index > 200 && start_index > 0) {
                     decode_buffer = vector_from_start_to_end(receive_buffer, start_index + 1, receive_buffer.size());//start to decode
+                    for (int j = i+1; j < num_samples; j++) {
+                        decode_buffer.push_back(inBuffer[j]);
+                    }//receive for
                     receive_buffer.clear();
                     sync_buffer.clear();
                     for (int i = 0; i < PREAMBLE_SIZE; i++) {
@@ -168,12 +172,13 @@ public:
                     start_index = -1;
                     sync_max = 0;
                     receive_power = 0;
-                    return true;
+                    detected = true;
+                    return detected;
                 }
 
             }
         }
-        return false;
+        return detected;
     }
 
     // deteck if the channel dose not has either jamming noise or data.
