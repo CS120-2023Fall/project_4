@@ -75,6 +75,7 @@ public:
         stopButton.setCentrePosition(120, 200);
         stopButton.onClick = [this] {
           juceState = juce_States_Set::STOP;
+
           mac.STOP();
           mes0.setText("stop", juce::NotificationType::dontSendNotification);
         };

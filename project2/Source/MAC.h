@@ -50,6 +50,7 @@ public:
         receiver.Write_symbols();
         macState == MAC_States_Set::Idle;
         receiver.Initialize();
+        resend = 0;
     }
 
 public:
