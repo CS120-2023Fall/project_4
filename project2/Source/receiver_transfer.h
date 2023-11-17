@@ -78,11 +78,14 @@ public:
     Rx_Frame_Received_Type decode_one_packet(const float *inBuffer, float *outBuffer, int num_samples) {
         for (int i = 0; i < num_samples; i++) {
             outBuffer[i] = 0;
+        }
+        for (int i = 0; i < num_samples; i++) {
+           
             decode_buffer.push_back(inBuffer[i]);
             if (decode_buffer.size() == samples_per_symbol * (PACKET_DATA_SIZE + OVERHEAD_SYMBOLS)) {
                 std::vector<unsigned int >symbols = demoudulator->Demodulate(decode_buffer, 0);//demoudulate them all
-                if (demoudulator->check_crc_one_packet(symbols, 0)) //valid ERROR FREE
-
+                //if (!demoudulator->check_crc_one_packet(symbols, 0)) //valid ERROR FREE
+                if(true)
                 {
                     std::vector<unsigned int> overhead = vector_from_start_to_end(symbols, 0, OVERHEAD_SYMBOLS);
                     std::vector<bool> overhead_bits = from_symbols_to_bits(overhead, BITS_PER_SYMBOL);
@@ -123,6 +126,8 @@ public:
 
         for (int i = 0; i < num_samples; i++) {
             outBuffer[i] = 0;
+        }
+        for (int i = 0; i < num_samples; i++) {
             double current_sample;
 
             current_sample = inBuffer[i];
@@ -130,7 +135,10 @@ public:
 
             receive_power = (receive_power * 63 + current_sample * current_sample) / 64;
 
-
+            if (current_sample > 0.1) {
+                int xxxxx = 1;
+                xxxxx++;
+            }
             receive_buffer.push_back(current_sample);
             sync_buffer.push_back(current_sample);
             sync_buffer.pop_front();
@@ -172,6 +180,7 @@ public:
     bool if_channel_quiet(const float *inBuffer, int num_samples) {
         // compare the sum of power with the threshold
         float absolutePowerSum = 0;
+
         for (int i = 0; i < num_samples; ++i) {
             absolutePowerSum += abs(inBuffer[i]);
         }
@@ -311,7 +320,9 @@ public:
         // inBuffer ,outBuffer and num_samples is not used,status indicate ack or data you want to add,it will add to the transmittion_buffer 
         //if all the packet successfully transmitted return false,else add the data frame
     {
-
+        for (int i = 0; i < num_samples; i++) {
+            outBuffer[i] = 0;
+        }
         std::vector<double> current_packet;
         if (status == Tx_ack) {
             //modulate a ack
@@ -340,7 +351,7 @@ public:
         return true;
     }
     std::vector<double> generate_the_Mac_head(Frame_Type status) {
-        std::vector<bool>bits;
+        std::vector<bool>bits_tmp;
         std::vector<bool> packet_num_bits = from_unsigned_int_to_bits_vector_filled_with_zero(transmitted_packet, 8);
         std::vector<bool> dest_bits = { 1,1,1 };
         std::vector<bool> src_bits = { 0,0,0 };
@@ -351,11 +362,11 @@ public:
         else {
             type_bits = { 1,0 };
         }
-        bits = connect(bits, packet_num_bits);
-        bits = connect(bits, dest_bits);
-        bits = connect(bits, src_bits);
-        bits = connect(bits, type_bits);
-        std::vector<double> head = modulater->Modulate(translate_from_bits_vector_to_unsigned_int_vector(bits, BITS_PER_SYMBOL), 0);
+        bits_tmp = connect(bits_tmp, packet_num_bits);
+        bits_tmp = connect(bits_tmp, dest_bits);
+        bits_tmp = connect(bits_tmp, src_bits);
+        bits_tmp = connect(bits_tmp, type_bits);
+        std::vector<double> head = modulater->Modulate(translate_from_bits_vector_to_unsigned_int_vector(bits_tmp, BITS_PER_SYMBOL), 0);
         return head;
     }
 
@@ -364,17 +375,20 @@ public:
     //trans finished then return true
     
     {
+        bool silence = false;
+
             for (int i = 0; i < num_samples; i++) {
                 if (transfer_num >= transmittion_buffer.size()) {
-                    return true;
+                    silence = true;
                     outBuffer[i] = 0;
                 }
                 else {
 
                     outBuffer[i] = transmittion_buffer[transfer_num];
                     transfer_num++;
+
                 }
             }
-            return false;
+            return silence;
     }
 };

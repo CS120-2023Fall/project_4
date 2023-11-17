@@ -118,12 +118,7 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
     }
     /// Idle
     if (macState == MAC_States_Set::Idle) {
-        bool tmp = receiver.detect_frame(inBuffer, outBuffer, num_samples);
-        // 1. detect preamble, invoke detect_frame()
-        if (tmp)  {
-            macState = MAC_States_Set::RxFrame;
-            return;
-        }
+
         // 2. ack time out
         if (ackTimeOut_valid) {
             auto currentTime = std::chrono::steady_clock::now();
@@ -145,6 +140,12 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
             macState = MAC_States_Set::CarrierSense;
             return;
         }
+        bool tmp = receiver.detect_frame(inBuffer, outBuffer, num_samples);
+        // 1. detect preamble, invoke detect_frame()
+        if (tmp) {
+            macState = MAC_States_Set::RxFrame;
+            return;
+        }
     }
     /// RxFrame
     else if (macState == MAC_States_Set::RxFrame) {
@@ -163,7 +164,7 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
             case Rx_Frame_Received_Type::valid_data:
                 macState = MAC_States_Set::TxACK;
                 receiver.received_packet += 1;
-                bool feedback = transmitter.Add_one_packet(inBuffer, outBuffer, num_samples, Tx_frame_status::Tx_ack);
+                //bool feedback = transmitter.Add_one_packet(inBuffer, outBuffer, num_samples, Tx_frame_status::Tx_ack);
 
                 return;             
         }
@@ -178,6 +179,9 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
     }
     /// CarrierSense
     else if (macState == MAC_States_Set::CarrierSense) {
+        for (int i = 0; i < num_samples; i++) {
+            outBuffer[i] = 0;
+        }
         if (receiver.if_channel_quiet(inBuffer, num_samples)) {
             macState = MAC_States_Set::TxFrame;
             bool feedback = transmitter.Add_one_packet(inBuffer, outBuffer, num_samples, Tx_frame_status::Tx_data);
