@@ -77,6 +77,7 @@ public:
           juceState = juce_States_Set::STOP;
 
           mac.STOP();
+          mac.macState = MAC_Layer::MAC_States_Set::Idle;
           mes0.setText("stop", juce::NotificationType::dontSendNotification);
         };
         addAndMakeVisible(stopButton);
