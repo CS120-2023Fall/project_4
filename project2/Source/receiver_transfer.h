@@ -47,7 +47,7 @@ public:
     }
 
     void Initialize() {
-      sync_buffer.clear();
+        sync_buffer = empty_deque;
         for (int i = 0; i < PREAMBLE_SIZE; i++) {
             sync_buffer.push_back(0);
         }

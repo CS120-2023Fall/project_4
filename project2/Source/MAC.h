@@ -72,6 +72,7 @@ public:
     MAC_States_Set macState{MAC_States_Set::Idle};
     bool TxPending{ false };
     std::deque<int> received_data;
+    bool wait = false;
 
 private:
     //enum class Frame_Type {
@@ -206,7 +207,10 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
         bool finish= transmitter.Trans(inBuffer, outBuffer, num_samples);
          // transmition finishes
         if (finish) {
+            beforeTime_ack = std::chrono::steady_clock::now();
+            backoff_exp = 5;
             macState = MAC_States_Set::Idle;
+            wait = true;
         }
     }
     /// ACKTimeout
