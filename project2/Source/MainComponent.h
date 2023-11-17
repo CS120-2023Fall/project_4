@@ -61,11 +61,11 @@ class MainContentComponent;
 This project refers to the JUCE official examples. (www.JUCE.com)
 
 */
-class MainComponent : public juce::AudioAppComponent {
+class MainContentComponent : public juce::AudioAppComponent {
     friend class Record;
 public:
     //==============================================================================
-    MainComponent() {
+    MainContentComponent() {
         setSize(600, 400);
 
         // playButton 
@@ -99,7 +99,7 @@ public:
         // recordButton
        
         addAndMakeVisible(receiver_with_wireButton);
-
+        setAudioChannels(2, 1);
 
         formatManager.registerBasicFormats();       // [1]
         auto dev_info = deviceManager.getAudioDeviceSetup();
@@ -109,7 +109,7 @@ public:
 
    
 
-    ~MainComponent() override {
+    ~MainContentComponent() override {
         shutdownAudio();
     }
 
@@ -175,5 +175,5 @@ private:
     MAC_Layer mac;
     // a buffer to save the result of the fft, sized 512.
 
-    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent)
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainContentComponent)
 };

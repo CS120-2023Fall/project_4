@@ -11,7 +11,7 @@
 /// //////////////////////////
 ///  set the macros appropriately!!!
 /// //////////////////////////
-#define QUIET_THRESHOLD 0.1
+#define QUIET_THRESHOLD 1
 constexpr const int maximum_packet = 50000 / PACKET_DATA_SIZE / BITS_PER_SYMBOL;
 constexpr const int CRC_SYMBOLS = CRC_BITS / BITS_PER_SYMBOL;//number of symbols in crc
 std::vector<double > empty=std::vector<double>(0);
@@ -113,6 +113,7 @@ public:
         // detect the preamble if  preamble detected return true,else false
             //after detecting it auto enter the decode_state and initialize the receiver(decode_buffer will have 200samples)    
     {
+
         for (int i = 0; i < num_samples; i++) {
             outBuffer[i] = 0;
             double current_sample;
@@ -318,7 +319,7 @@ public:
                 current_packet.push_back(packet_sequences[index]);
             }
             std::vector<double> mac_head = generate_the_Mac_head(Frame_Type::data);
-           // current_packet = insert(current_packet, mac_head, PREAMBLE_SIZE + CRC_SYMBOLS * samples_per_symbol);
+            current_packet = insert(current_packet, mac_head, PREAMBLE_SIZE + CRC_SYMBOLS * samples_per_symbol);
             for (int i = 0; i < current_packet.size(); i++) {
                 transmittion_buffer.push_back(current_packet[i]);
             }

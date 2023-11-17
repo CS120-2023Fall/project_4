@@ -105,10 +105,7 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
     if (macState == MAC_States_Set::debug_error) {
         assert(0);
     }
-    for (int i = 0; i < num_samples; i++) {
-        outBuffer[i] = inBuffer[i];
-    }
-    return;
+
     // deal with every state
     if (transmitter.transmitted_packet >= maximum_packet) {
         TxPending = false;
