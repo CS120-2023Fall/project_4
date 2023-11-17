@@ -202,6 +202,12 @@ public:
         generate_ack_packet();
         generate_packet_sequence();
     }
+    void Initialize() { CRC_symbols.clear();
+        ack_data_symbols.clear();
+        transfer_num = 0;
+        transmittion_buffer.clear();
+        transmitted_packet = 0;
+    }
     std::vector<double > transmittion_buffer;
     std::vector<bool>bits = default_trans_wire.bits;
     std::vector<unsigned int> symbols = default_trans_wire.symbols;

@@ -48,9 +48,12 @@ public:
     //void reset_receiving_info();
     void STOP() {
         receiver.Write_symbols();
-}
+        macState == MAC_States_Set::Idle;
+        receiver.Initialize();
+        resend = 0;
+    }
 
-private:
+public:
     enum class MAC_States_Set {
         Idle,
         CarrierSense,
@@ -213,6 +216,6 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
     }
     /// LinkError
     else if (macState == MAC_States_Set::LinkError) {
-        assert(false);
+       
     }
 }
