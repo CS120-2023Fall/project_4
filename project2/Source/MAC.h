@@ -17,7 +17,7 @@
 #define MY_MAC_ADDRESS 0b001
 #define RECEND_THRESHOLD 8
 // milisecond
-#define ACK_TIME_OUT_THRESHOLD 100
+#define ACK_TIME_OUT_THRESHOLD 100000
 //structure  PREAMBLE+CRC_SYMBOLS+PACKET_NUM_SYMBOLS+DEST+SRC+TYPE
 //enum class Rx_Frame_Received_Type {
 //    still_receiving = -1,
@@ -53,6 +53,8 @@ public:
         transmitter.Initialize();
         resend = 0;
         ackTimeOut_valid = false;
+        TxPending = true;
+        wait = false;
         backoff_exp = 0;
     }
 
@@ -154,6 +156,7 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
     }
     /// RxFrame
     else if (macState == MAC_States_Set::RxFrame) {
+        KeepSilence(inBuffer, outBuffer, num_samples);
         Rx_Frame_Received_Type tmp = receiver.decode_one_packet(inBuffer, outBuffer, num_samples);
         switch (tmp) {
             case Rx_Frame_Received_Type::error:
@@ -165,6 +168,11 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
                 ackTimeOut_valid = false;
                 transmitter.transmitted_packet += 1;//the next staus transmit the next packet
                 macState = MAC_States_Set::Idle;
+                if (transmitter.transmitted_packet >= 2) {
+                    int xxxx = 1;
+                    xxxx++;
+                }
+                wait = false;
                 return;
             case Rx_Frame_Received_Type::valid_data:
                 macState = MAC_States_Set::TxACK;
@@ -178,7 +186,7 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
     else if (macState == MAC_States_Set::TxACK) {
         bool finish = transmitter.Trans(inBuffer, outBuffer, num_samples);
         if (finish) {
-            macState == MAC_States_Set::Idle;
+            macState = MAC_States_Set::Idle;
        }
         return;
     }
@@ -208,7 +216,7 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
          // transmition finishes
         if (finish) {
             beforeTime_ack = std::chrono::steady_clock::now();
-            backoff_exp = 5;
+            backoff_exp = 9;
             macState = MAC_States_Set::Idle;
             wait = true;
         }

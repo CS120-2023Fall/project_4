@@ -82,6 +82,18 @@ public:
         for (int i = 0; i < num_samples; i++) {
            
             decode_buffer.push_back(inBuffer[i]);
+            if (decode_buffer.size() >= samples_per_symbol * (OVERHEAD_SYMBOLS)) {
+                auto decode_detect = vector_from_start_to_end(decode_buffer, 0, samples_per_symbol * OVERHEAD_SYMBOLS);
+                std::vector<unsigned int >symbols = demoudulator->Demodulate(decode_detect, 0);
+                std::vector<unsigned int> overhead = vector_from_start_to_end(symbols, 0, OVERHEAD_SYMBOLS);
+                std::vector<bool> overhead_bits = from_symbols_to_bits(overhead, BITS_PER_SYMBOL);
+                unsigned int packet_num = from_bits_vector_to_unsigned_int(vector_from_start_to_end(overhead_bits, CRC_BITS, CRC_BITS + PACKET_NUM_BITS));
+                int type = ((int)overhead_bits[overhead_bits.size() - 2]) * 2 + (int)overhead_bits[overhead_bits.size() - 1];
+                if (type == 0) {
+                    decode_buffer.clear();
+                    return error;
+                }
+            }
             if (decode_buffer.size() == samples_per_symbol * (PACKET_DATA_SIZE + OVERHEAD_SYMBOLS)) {
                 std::vector<unsigned int >symbols = demoudulator->Demodulate(decode_buffer, 0);//demoudulate them all
                 //if (!demoudulator->check_crc_one_packet(symbols, 0)) //valid ERROR FREE
@@ -95,7 +107,7 @@ public:
                         decode_buffer.clear();
                         return valid_ack;
                     }
-                    else {
+                    else if(Frame_Type(type)==Frame_Type::data) {
                         int offset = OVERHEAD_SYMBOLS;
                         if (packet_num >= received_packet) {//not repeat then push them all
                             for (int i = offset; i < symbols.size(); i++) {
@@ -104,6 +116,10 @@ public:
                         }
                         decode_buffer.clear();
                         return valid_data;
+                    }
+                    else {
+                        decode_buffer.clear();
+                        return error;
                     }
 
                 }
