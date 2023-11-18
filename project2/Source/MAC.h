@@ -17,7 +17,7 @@
 #define MY_MAC_ADDRESS 0b001
 #define RECEND_THRESHOLD 8
 // milisecond
-#define ACK_TIME_OUT_THRESHOLD 100000
+#define ACK_TIME_OUT_THRESHOLD 1000
 //structure  PREAMBLE+CRC_SYMBOLS+PACKET_NUM_SYMBOLS+DEST+SRC+TYPE
 //enum class Rx_Frame_Received_Type {
 //    still_receiving = -1,
@@ -45,10 +45,8 @@ public:
     // update MAC states
     void refresh_MAC(const float *inBuffer, float *outBuffer, int num_samples);
     // prepare for next packet
-    //void reset_receiving_info();
-    void STOP() {
-        receiver.Write_symbols();
-        macState == MAC_States_Set::Idle;
+    void Start() {
+        macState = MAC_States_Set::Idle;
         receiver.Initialize();
         transmitter.Initialize();
         resend = 0;
@@ -56,6 +54,12 @@ public:
         TxPending = true;
         wait = false;
         backoff_exp = 0;
+    }
+    
+    //void reset_receiving_info();
+    void STOP() {
+        receiver.Write_symbols();
+       
     }
 
 public:
@@ -75,6 +79,7 @@ public:
     bool TxPending{ false };
     std::deque<int> received_data;
     bool wait = false;
+    int start_for_wait_sample=0;
 
 private:
     //enum class Frame_Type {
@@ -118,10 +123,9 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
     if (macState == MAC_States_Set::debug_error) {
         assert(0);
     }
-    KeepSilence(inBuffer, outBuffer, num_samples);
-    // deal with every state
+       // deal with every state
     if (transmitter.transmitted_packet >= maximum_packet) {
-        TxPending = false;
+        macState = MAC_States_Set::LinkError;
     }
     /// Idle
     if (macState == MAC_States_Set::Idle) {
@@ -156,7 +160,6 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
     }
     /// RxFrame
     else if (macState == MAC_States_Set::RxFrame) {
-        KeepSilence(inBuffer, outBuffer, num_samples);
         Rx_Frame_Received_Type tmp = receiver.decode_one_packet(inBuffer, outBuffer, num_samples);
         switch (tmp) {
             case Rx_Frame_Received_Type::error:
@@ -197,6 +200,10 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
         }
         if (receiver.if_channel_quiet(inBuffer, num_samples)) {
             macState = MAC_States_Set::TxFrame;
+            if (transmitter.transmitted_packet >= 1) {
+                int xxxx = 1;
+                xxxx++;
+            }
             bool feedback = transmitter.Add_one_packet(inBuffer, outBuffer, num_samples, Tx_frame_status::Tx_data);
             ackTimeOut_valid = true;
             beforeTime_ack = std::chrono::steady_clock::now();
@@ -212,7 +219,13 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
     }
     /// TxFrame
     else if (macState == MAC_States_Set::TxFrame) {
+        if (transmitter.transmitted_packet >= 1) {
+            int xxxx = 1;
+            xxxx++;
+        }
+
         bool finish= transmitter.Trans(inBuffer, outBuffer, num_samples);
+
          // transmition finishes
         if (finish) {
             beforeTime_ack = std::chrono::steady_clock::now();
@@ -234,6 +247,7 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
             backoff_exp = rand() % 8 + 1;
             beforeTime_backoff = std::chrono::steady_clock::now();
             macState = MAC_States_Set::Idle;
+            wait = false;
             return;
         }
     }

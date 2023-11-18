@@ -86,7 +86,7 @@ public:
         T_and_R_Button.setButtonText("transmit and receive");
         T_and_R_Button.setSize(110, 40);
         T_and_R_Button.setCentrePosition(220, 200);
-        T_and_R_Button.onClick = [this] {juceState = juce_States_Set::T_AND_R;
+        T_and_R_Button.onClick = [this] {juceState = juce_States_Set::T_AND_R; mac.Start();
         mes0.setText("transmit and receive", juce::NotificationType::dontSendNotification); };
         addAndMakeVisible(T_and_R_Button);
 
@@ -145,6 +145,7 @@ public:
                 bufferToFill.startSample);
             int num_samples = bufferToFill.buffer->getNumSamples();
             auto* outBuffer = bufferToFill.buffer->getWritePointer(channel, bufferToFill.startSample);
+            KeepSilence( inBuffer, outBuffer,  num_samples);
             if (juceState == juce_States_Set::T_AND_R) {
                 mac.TxPending = true;
                 if (mac.wait) {
@@ -157,6 +158,13 @@ public:
 
                 for (int i = 0; i < num_samples; i++) {
                     outBuffer[i] = 0;
+                }
+            }
+            for (int i = 0; i < num_samples; i++) {
+                double tmp = outBuffer[i];
+                if (i >= PREAMBLE_SIZE) {
+                    int xxxxx1 = 111;
+                    xxxxx1++;
                 }
             }
             if (false) {

@@ -93,6 +93,10 @@ public:
                     decode_buffer.clear();
                     return error;
                 }
+                else if((Frame_Type)type==Frame_Type::ack) {
+                    decode_buffer.clear();
+                    return valid_ack;
+                }
             }
             if (decode_buffer.size() == samples_per_symbol * (PACKET_DATA_SIZE + OVERHEAD_SYMBOLS)) {
                 std::vector<unsigned int >symbols = demoudulator->Demodulate(decode_buffer, 0);//demoudulate them all
@@ -140,9 +144,6 @@ public:
             //after detecting it auto enter the decode_state and initialize the receiver(decode_buffer will have 200samples)    
     {
         bool detected = false;
-        for (int i = 0; i < num_samples; i++) {
-            outBuffer[i] = 0;
-        }
         for (int i = 0; i < num_samples; i++) {
             double current_sample;
 
@@ -286,7 +287,7 @@ public:
             int start = i;
             int end = i + PACKET_DATA_SIZE;
             if (end >= size) {
-                end = size - 1;
+                end = size;
             }
             for (int j = 0; j < PREAMBLE_SIZE; j++) {
                 packet_sequences.push_back(preamble[j]);
@@ -304,7 +305,7 @@ public:
                 }
             }
 
-            for (int symbol_index = start; symbol_index <= end; symbol_index++) {
+            for (int symbol_index = start; symbol_index < end; symbol_index++) {
                 unsigned int symbol = symbols[symbol_index];
                 auto carrier = (symbol & 1) == 1 ? carrier_waves_1 : carrier_waves_0;//using the last bit to determine psk
                 float amplitude = max_amplitude * float((symbol >> 1) + 1) / ask_num;

@@ -10,7 +10,7 @@
 
 #define MAXIMUM_TOTAL_SECONDS 5//total time it will run most
 #define PREAMBLE_SIZE 480 // the number of preamble
-#define PACKET_DATA_SIZE 500//the number of packet
+#define PACKET_DATA_SIZE 500////the number of packet
 #define END_FRAME_SIZE 48 //the number of empty zero between packets
 
 
