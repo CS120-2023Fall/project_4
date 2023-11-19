@@ -61,10 +61,7 @@ class MainContentComponent;
 This project refers to the JUCE official examples. (www.JUCE.com)
 
 */
-const int maximum_csma_time = 1;
-const int maximum_csma_with_jam_time = 70;
 bool start_csma = false;
-int start_csma_samples = maximum_csma_time * 48000;
 class MainContentComponent : public juce::AudioAppComponent {
     friend class Record;
 public:
@@ -108,7 +105,7 @@ public:
         csmaButton.setButtonText("csma_with_jam");
         csmaButton.setSize(110, 40);
         csmaButton.setCentrePosition(440, 200);
-        csmaButton.onClick = [this] {start_csma = true; start_csma_samples = maximum_csma_with_jam_time * 48000;
+        csmaButton.onClick = [this] {start_csma = true;
         mes0.setText("csma_with_jam_task", juce::NotificationType::dontSendNotification); };
         addAndMakeVisible(csmaButton);
         // message
@@ -168,14 +165,13 @@ public:
             auto* outBuffer = bufferToFill.buffer->getWritePointer(channel, bufferToFill.startSample);
             KeepSilence( inBuffer, outBuffer,  num_samples);
             if (start_csma) {
-                if (start_csma_samples >= 0) {
-                    start_csma_samples -= num_samples;
+                juceState = juce_States_Set::T_AND_R;
+                mac.TxPending = true;
+                if (mac.wait) {
+                    mac.TxPending = false;
                 }
-                else {
-                    Tranlate_from_A_bin_To_B_Bin("INPUT.bin", "OUTPUT_CSMA.bin");
-                    start_csma=false;
-                    mac.macState = MAC_Layer::MAC_States_Set::LinkError;
-                }
+                mac.refresh_MAC(inBuffer, outBuffer, num_samples);
+                return;
             }
             if (juceState == juce_States_Set::T_AND_R) {
                 mac.TxPending = true;
