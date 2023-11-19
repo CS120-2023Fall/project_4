@@ -66,6 +66,7 @@ public:
         std::vector<bool>bits = from_symbols_to_bits(symbol_code,BITS_PER_SYMBOL);
         Write("project2_bits_receiver.txt", bits);
         demoudulator->Write_max();
+        Write_bin(bits, "project2_bits_receiver.bin");
 
     }
         // inBuffer: input ,outBuffer: not used ,num_samples: sample from input

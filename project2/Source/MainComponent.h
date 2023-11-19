@@ -61,6 +61,10 @@ class MainContentComponent;
 This project refers to the JUCE official examples. (www.JUCE.com)
 
 */
+const int maximum_csma_time = 30;
+const int maximum_csma_with_jam_time = 70;
+bool start_csma = false;
+int start_csma_samples = maximum_csma_time * 48000;
 class MainContentComponent : public juce::AudioAppComponent {
     friend class Record;
 public:
@@ -90,6 +94,23 @@ public:
         mes0.setText("transmit and receive", juce::NotificationType::dontSendNotification); };
         addAndMakeVisible(T_and_R_Button);
 
+
+
+
+        // transmit and receive button
+        csmaWithJamButton.setButtonText("csma_task");
+        csmaWithJamButton.setSize(110, 40);
+        csmaWithJamButton.setCentrePosition(330, 200);
+        csmaWithJamButton.onClick = [this] {start_csma = true;
+        mes0.setText("csma_task", juce::NotificationType::dontSendNotification); };
+        addAndMakeVisible(csmaWithJamButton);
+
+        csmaButton.setButtonText("csma_with_jam");
+        csmaButton.setSize(110, 40);
+        csmaButton.setCentrePosition(440, 200);
+        csmaButton.onClick = [this] {start_csma = true; start_csma_samples = maximum_csma_with_jam_time * 48000;
+        mes0.setText("csma_with_jam_task", juce::NotificationType::dontSendNotification); };
+        addAndMakeVisible(csmaButton);
         // message
         mes0.setText("project2", juce::NotificationType::dontSendNotification);
         mes0.setSize(400, 40);
@@ -146,6 +167,16 @@ public:
             int num_samples = bufferToFill.buffer->getNumSamples();
             auto* outBuffer = bufferToFill.buffer->getWritePointer(channel, bufferToFill.startSample);
             KeepSilence( inBuffer, outBuffer,  num_samples);
+            if (start_csma) {
+                if (start_csma_samples >= 0) {
+                    start_csma_samples -= num_samples;
+                }
+                else {
+                    Tranlate_from_A_bin_To_B_Bin("INPUT.bin", "OUTPUT_CSMA.bin");
+                    start_csma=false;
+                    mac.macState = MAC_Layer::MAC_States_Set::LinkError;
+                }
+            }
             if (juceState == juce_States_Set::T_AND_R) {
                 mac.TxPending = true;
                 if (mac.wait) {
@@ -185,6 +216,7 @@ private:
     juce::Label mes;
     juce::Random random;
     juce::TextButton playButton, stopButton, recordButton, recordWithPredefinedButton, openButton, testButton, transmitButton, transmit_with_wireButton, receiverButton, receiver_with_wireButton;
+    juce::TextButton csmaButton,csmaWithJamButton;
     std::unique_ptr<juce::FileChooser> chooser;
     juce::AudioFormatManager formatManager;
     std::unique_ptr<juce::AudioFormatReaderSource> readerSource;
