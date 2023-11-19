@@ -61,7 +61,7 @@ class MainContentComponent;
 This project refers to the JUCE official examples. (www.JUCE.com)
 
 */
-const int maximum_csma_time = 30;
+const int maximum_csma_time = 1;
 const int maximum_csma_with_jam_time = 70;
 bool start_csma = false;
 int start_csma_samples = maximum_csma_time * 48000;

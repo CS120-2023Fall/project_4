@@ -56,26 +56,25 @@ inline std::vector<bool> Read_bits_from_bin(const std::string& path) {
 }
 inline void Tranlate_from_A_bin_To_B_Bin(const std::string& path, const std::string& b_path) {
 	std::ifstream f(path.c_str(), std::ios::binary | std::ios::in);
-	std::ofstream o(b_path.c_str(), std::ios::out);
+	std::ofstream o(b_path.c_str(), std::ios::binary|std::ios::out);
 	std::string line;
 	std::vector<bool>bits;
 	char c;
 	while (f.get(c)) {
-
-
+		unsigned  t = 0;
 		for (int j = 7; j >= 0; j--) {
 			bool bit = static_cast<bool>(c >> j) & 1;
+			t += bit * (1 << (7 - j));
 			bits.push_back(bit);
-			o << (int)bit;
 		}
-
+		o << (char)c;
 
 
 	}
 }
 inline void Write_bin(std::vector<bool>bits,const std::string& path) {
-	std::ofstream o(path.c_str(), std::ios::out);
-	o.write((const char*)&(bits[0]), bits.size());
+	std::ofstream o(path.c_str(), std::ios::binary| std::ios::out);
+	o.write((const char*)&(bits[0]), bits.size()/8);
 	o.close();
 }
 inline std::vector<bool> from_symbols_to_bits(const std::vector<unsigned int >symbols, int seperation_num) {
