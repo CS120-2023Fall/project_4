@@ -78,7 +78,9 @@ public:
           juceState = juce_States_Set::STOP;
 
           mac.STOP();
+          start_csma = false;
           mac.macState = MAC_Layer::MAC_States_Set::Idle;
+
           mes0.setText("stop", juce::NotificationType::dontSendNotification);
         };
         addAndMakeVisible(stopButton);
@@ -96,7 +98,7 @@ public:
         csmaWithJamButton.setButtonText("csma_task");
         csmaWithJamButton.setSize(110, 40);
         csmaWithJamButton.setCentrePosition(330, 200);
-        csmaWithJamButton.onClick = [this] {start_csma = true;
+        csmaWithJamButton.onClick = [this] {start_csma = true; mac.Start();
         mes0.setText("csma_task", juce::NotificationType::dontSendNotification); };
         addAndMakeVisible(csmaWithJamButton);
 
@@ -162,7 +164,7 @@ public:
             int num_samples = bufferToFill.buffer->getNumSamples();
             auto* outBuffer = bufferToFill.buffer->getWritePointer(channel, bufferToFill.startSample);
             KeepSilence( inBuffer, outBuffer,  num_samples);
-            if (start_csma) {
+            if (start_csma && juceState != juce_States_Set::T_AND_R) {
                 juceState = juce_States_Set::T_AND_R;
                 mac.TxPending = true;
                 if (mac.wait) {
@@ -192,12 +194,7 @@ public:
                     xxxxx1++;
                 }
             }
-            if (false) {
-                mac.TxPending = false;
-                stopButton.triggerClick();
-            }
             if (mac.macState == MAC_Layer::MAC_States_Set::LinkError) {
-            
                 stopButton.triggerClick();
             }   
             break;

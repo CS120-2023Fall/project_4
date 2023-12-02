@@ -74,7 +74,6 @@ public:
         debug_error
     };
 
-public:
     MAC_States_Set macState{MAC_States_Set::Idle};
     bool TxPending{ false };
     std::deque<int> received_data;
@@ -222,7 +221,7 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
             //backoff_exp = 9;
             ackTimeOut_valid = true;
             macState = MAC_States_Set::Idle;
-            wait = true;
+            //wait = true;
         }
     }
     /// ACKTimeout
