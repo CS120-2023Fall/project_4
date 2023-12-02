@@ -93,7 +93,7 @@ private:
     bool ackTimeOut_valid{ false };
     // exponent of the backoff. 2^m - 1, millisecond
     int backoff_exp{ 1 };
-    std::chrono::time_point < std::chrono::steady_clock> beforeTime_backoff;
+    std::chrono::time_point < std::chrono::steady_clock> beforeTime_backoff{ std::chrono::steady_clock::now() };
     Receiver receiver;
     Transfer transmitter;
 };
