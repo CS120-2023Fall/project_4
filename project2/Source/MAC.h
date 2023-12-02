@@ -103,9 +103,9 @@ void KeepSilence(const float* inBuffer, float* outBuffer, int num_samples) {
 }
 void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_samples) {
     // for debug
-    if (macState == MAC_States_Set::debug_error) {
-        assert(0);
-    }
+    //if (macState == MAC_States_Set::debug_error) {
+    //    assert(0);
+    //}
        // deal with every state
     if (transmitter.transmitted_packet >= maximum_packet) {
         macState = MAC_States_Set::LinkError;
@@ -165,6 +165,8 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
                     xxxx++;
                 }
                 wait = false;
+                // set backoff
+                backoff_exp = rand() % 5 + 4;
                 return;
             case Rx_Frame_Received_Type::valid_data:
                 macState = MAC_States_Set::TxACK;
@@ -178,6 +180,7 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
     else if (macState == MAC_States_Set::TxACK) {
         bool finish = transmitter.Trans(inBuffer, outBuffer, num_samples);
         if (finish) {
+            backoff_exp = rand() % 5 + 4;
             macState = MAC_States_Set::Idle;
        }
         return;
@@ -218,10 +221,9 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
          // transmition finishes
         if (finish) {
             beforeTime_ack = std::chrono::steady_clock::now();
-            //backoff_exp = 9;
             ackTimeOut_valid = true;
             macState = MAC_States_Set::Idle;
-            //wait = true;
+            wait = true;
         }
     }
     /// ACKTimeout
@@ -230,11 +232,12 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
             macState = MAC_States_Set::LinkError;
             return;
         }
+        // should not reach here
         else {
             ++resend;
             // set backoff after ack timeout
-            // [1, 8]
-            backoff_exp = rand() % 8 + 1;
+            // [3, 8]
+            backoff_exp = rand() % 6 + 3;
             beforeTime_backoff = std::chrono::steady_clock::now();
             macState = MAC_States_Set::Idle;
             wait = false;
@@ -243,6 +246,6 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
     }
     /// LinkError
     else if (macState == MAC_States_Set::LinkError) {
-       
+        return;
     }
 }
