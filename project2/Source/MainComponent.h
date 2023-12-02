@@ -82,6 +82,7 @@ public:
           mac.macState = MAC_Layer::MAC_States_Set::Idle;
 
           mes0.setText("stop", juce::NotificationType::dontSendNotification);
+          mes1.setText("null", juce::NotificationType::dontSendNotification);
         };
         addAndMakeVisible(stopButton);
 
@@ -107,7 +108,8 @@ public:
         csmaButton.setCentrePosition(440, 200);
         csmaButton.onClick = [this] {start_csma = true;
         mes0.setText("csma_with_jam_task", juce::NotificationType::dontSendNotification); };
-        addAndMakeVisible(csmaButton);
+        //addAndMakeVisible(csmaButton);
+        // 
         // message
         mes0.setText("project2", juce::NotificationType::dontSendNotification);
         mes0.setSize(400, 40);

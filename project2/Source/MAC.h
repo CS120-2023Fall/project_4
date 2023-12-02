@@ -5,6 +5,7 @@
 #include<chrono>
 #include<cstdlib>
 #include "receiver_transfer.h"
+#include <Windows.h>
 //#include "transmitter.h"
 
 /////////////////////////////////
@@ -172,12 +173,15 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
                 macState = MAC_States_Set::TxACK;
                 receiver.received_packet += 1;
                 bool feedback = transmitter.Add_one_packet(inBuffer, outBuffer, num_samples, Tx_frame_status::Tx_ack);
-                mes[1]->setText("ACK received: " + std::to_string(receiver.received_packet), juce::dontSendNotification);
+                mes[1]->setText("Packet received: " + std::to_string(receiver.received_packet), juce::dontSendNotification);
                 return;             
         }
     }
     /// TxACK
     else if (macState == MAC_States_Set::TxACK) {
+        if (!receiver.if_channel_quiet(inBuffer, num_samples)) {
+            return;
+        }
         bool finish = transmitter.Trans(inBuffer, outBuffer, num_samples);
         if (finish) {
             backoff_exp = rand() % 5 + 4;
