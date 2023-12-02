@@ -93,7 +93,7 @@ private:
     bool ackTimeOut_valid{ false };
     // exponent of the backoff. 2^m - 1, millisecond
     int backoff_exp{ 1 };
-    std::chrono::time_point < std::chrono::steady_clock> beforeTime_backoff;
+    std::chrono::time_point < std::chrono::steady_clock> beforeTime_backoff{ std::chrono::steady_clock::now() };
     Receiver receiver;
     Transfer transmitter;
 };
@@ -171,7 +171,7 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
                 macState = MAC_States_Set::TxACK;
                 receiver.received_packet += 1;
                 bool feedback = transmitter.Add_one_packet(inBuffer, outBuffer, num_samples, Tx_frame_status::Tx_ack);
-
+                mes[1]->setText("ACK received: " + std::to_string(receiver.received_packet), juce::dontSendNotification);
                 return;             
         }
     }
@@ -196,8 +196,8 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
             }
             bool feedback = transmitter.Add_one_packet(inBuffer, outBuffer, num_samples, Tx_frame_status::Tx_data);
             //ackTimeOut_valid = true;
-            beforeTime_ack = std::chrono::steady_clock::now();
-            backoff_exp = 0;
+            //beforeTime_ack = std::chrono::steady_clock::now();
+            //backoff_exp = 0;
             return;
         }
         else {

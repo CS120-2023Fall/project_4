@@ -92,8 +92,6 @@ public:
         addAndMakeVisible(T_and_R_Button);
 
 
-
-
         // transmit and receive button
         csmaWithJamButton.setButtonText("csma_task");
         csmaWithJamButton.setSize(110, 40);
@@ -113,8 +111,8 @@ public:
         mes0.setSize(400, 40);
         addAndMakeVisible(mes0);
 
-        mes1.setText("addition", juce::NotificationType::dontSendNotification);
-        mes0.setSize(400, 60);
+        mes1.setText("addition mes", juce::NotificationType::dontSendNotification);
+        mes1.setSize(400, 90);
         addAndMakeVisible(mes1);
 
         juce::Label* tmp[2] = { &mes0, &mes1 };
