@@ -119,8 +119,16 @@ public:
         mes1.setSize(400, 90);
         addAndMakeVisible(mes1);
 
-        juce::Label* tmp[2] = { &mes0, &mes1 };
-        mac = MAC_Layer(tmp, 2);
+        mes2.setText("addition mes2", juce::NotificationType::dontSendNotification);
+        mes2.setSize(400, 130);
+        addAndMakeVisible(mes2);
+
+        mes3.setText("addition mes3", juce::NotificationType::dontSendNotification);
+        mes3.setSize(400, 170);
+        addAndMakeVisible(mes3);
+
+        juce::Label* tmp[4] = { &mes0, &mes1, &mes2, &mes3};
+        mac = MAC_Layer(tmp, 4);
         // recordButton
        
         addAndMakeVisible(receiver_with_wireButton);
@@ -176,7 +184,7 @@ public:
             //    return;
             //}
             if (juceState == juce_States_Set::T_AND_R) {
-                mac.TxPending = true;
+                mac.TxPending = false;
                 if (mac.wait) {
                     mac.TxPending = false;
                 }
@@ -222,7 +230,7 @@ private:
     juce::TextButton T_and_R_Button;
     // state of the outer program
     juce_States_Set juceState{ juce_States_Set::STOP };
-    juce::Label mes0, mes1;
+    juce::Label mes0, mes1, mes2, mes3;
     MAC_Layer mac;
     // a buffer to save the result of the fft, sized 512.
 

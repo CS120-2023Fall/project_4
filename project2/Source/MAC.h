@@ -161,6 +161,8 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
                 ackTimeOut_valid = false;
                 transmitter.transmitted_packet += 1;//the next staus transmit the next packet
                 macState = MAC_States_Set::Idle;
+                mes[2]->setText("Received ack: " + std::to_string(transmitter.transmitted_packet), 
+                    juce::NotificationType::dontSendNotification);
                 if (transmitter.transmitted_packet >= 2) {
                     int xxxx = 1;
                     xxxx++;
