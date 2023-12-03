@@ -6,7 +6,9 @@
 #define NUM_DEST_BITS 3
 #define NUM_SRC_BITS 3
 #define NUM_TYPE_BITS 2
+//////////////////////////////
 #define MY_MAC_ADDRESS 0b001
+////////////////////////////////
 #define RECEND_THRESHOLD 5
 /// //////////////////////////
 ///  set the macros appropriately!!!
@@ -90,7 +92,8 @@ public:
                 std::vector<bool> overhead_bits = from_symbols_to_bits(overhead, BITS_PER_SYMBOL);
                 unsigned int packet_num = from_bits_vector_to_unsigned_int(vector_from_start_to_end(overhead_bits, CRC_BITS, CRC_BITS + PACKET_NUM_BITS));
                 int type = ((int)overhead_bits[overhead_bits.size() - 2]) * 2 + (int)overhead_bits[overhead_bits.size() - 1];
-                if (type == 0) {
+                int packet_destination = (overhead_bits[16] << 2) + (overhead_bits[17] << 1) + overhead_bits[18];
+                if (type == 0 || packet_destination == MY_MAC_ADDRESS) {
                     decode_buffer.clear();
                     return error;
                 }
@@ -343,9 +346,9 @@ public:
         // inBuffer ,outBuffer and num_samples is not used,status indicate ack or data you want to add,it will add to the transmittion_buffer 
         //if all the packet successfully transmitted return false,else add the data frame
     {
-        for (int i = 0; i < num_samples; i++) {
-            outBuffer[i] = 0;
-        }
+        //for (int i = 0; i < num_samples; i++) {
+        //    outBuffer[i] = 0;
+        //}
         std::vector<double> current_packet;
         if (status == Tx_ack) {
             //modulate a ack

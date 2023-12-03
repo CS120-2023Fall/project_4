@@ -175,12 +175,21 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
                 macState = MAC_States_Set::TxACK;
                 receiver.received_packet += 1;
                 bool feedback = transmitter.Add_one_packet(inBuffer, outBuffer, num_samples, Tx_frame_status::Tx_ack);
+                backoff_exp = 6;
+                beforeTime_backoff = std::chrono::steady_clock::now();
                 mes[1]->setText("Packet received: " + std::to_string(receiver.received_packet), juce::dontSendNotification);
-                return;             
+                return;
         }
     }
     /// TxACK
     else if (macState == MAC_States_Set::TxACK) {
+        auto currentTime = std::chrono::steady_clock::now();
+        double duration_milisecond = std::chrono::duration<double, std::milli>(currentTime - beforeTime_backoff).count();
+        // +, - first, then <<£¬ so use ()
+        double backoff = (1 << backoff_exp) - 1;
+        if (duration_milisecond <= backoff) {
+            return;
+        }
         if (!receiver.if_channel_quiet(inBuffer, num_samples)) {
             return;
         }

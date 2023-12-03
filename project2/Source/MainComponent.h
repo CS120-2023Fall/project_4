@@ -83,6 +83,8 @@ public:
 
           mes0.setText("stop", juce::NotificationType::dontSendNotification);
           mes1.setText("null", juce::NotificationType::dontSendNotification);
+          mes2.setText("null", juce::NotificationType::dontSendNotification);
+          mes3.setText("null", juce::NotificationType::dontSendNotification);
         };
         addAndMakeVisible(stopButton);
 
