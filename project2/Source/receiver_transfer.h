@@ -82,10 +82,11 @@ public:
         for (int i = 0; i < num_samples; i++) {
             outBuffer[i] = 0;
         }
+        double scale = 10;
         for (int i = 0; i < num_samples; i++) {
            
-            decode_buffer.push_back(inBuffer[i]);
-            if (decode_buffer.size() >= samples_per_symbol * (OVERHEAD_SYMBOLS)) {
+            decode_buffer.push_back(scale*inBuffer[i]);
+          /*  if (decode_buffer.size() >= samples_per_symbol * (OVERHEAD_SYMBOLS)) {
                 auto decode_detect = vector_from_start_to_end(decode_buffer, 0, samples_per_symbol * OVERHEAD_SYMBOLS);
                 std::vector<unsigned int >symbols = demoudulator->Demodulate(decode_detect, 0);
                 std::vector<unsigned int> overhead = vector_from_start_to_end(symbols, 0, OVERHEAD_SYMBOLS);
@@ -101,7 +102,7 @@ public:
                     decode_buffer.clear();
                     return valid_ack;
                 }
-            }
+            }*/
             if (decode_buffer.size() == samples_per_symbol * (PACKET_DATA_SIZE + OVERHEAD_SYMBOLS)) {
                 std::vector<unsigned int >symbols = demoudulator->Demodulate(decode_buffer, 0);//demoudulate them all
                 //if (!demoudulator->check_crc_one_packet(symbols, 0)) //valid ERROR FREE
@@ -148,10 +149,11 @@ public:
             //after detecting it auto enter the decode_state and initialize the receiver(decode_buffer will have 200samples)    
     {
         bool detected = false;
+        double scale = 10;
         for (int i = 0; i < num_samples; i++) {
             double current_sample;
 
-            current_sample = inBuffer[i];
+            current_sample = scale*inBuffer[i];
 
 
             receive_power = (receive_power * 63 + current_sample * current_sample) / 64;
