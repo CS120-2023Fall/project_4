@@ -126,6 +126,8 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
         bool tmp = receiver.detect_frame(inBuffer, outBuffer, num_samples);
         // 1. detect preamble, invoke detect_frame()
         if (tmp) {
+            mes[2]->setText("preamble detecked " + std::to_string(receiver.received_packet) + ", " + std::to_string(transmitter.transmitted_packet), 
+                juce::NotificationType::dontSendNotification);
             macState = MAC_States_Set::RxFrame;
             return;
         }
