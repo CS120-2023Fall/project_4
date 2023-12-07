@@ -85,10 +85,7 @@ void KeepSilence(const float* inBuffer, float* outBuffer, int num_samples) {
     }
 }
 void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_samples) {
-    // for debug
-    //if (macState == MAC_States_Set::debug_error) {
-    //    assert(0);
-    //}
+
        // deal with every state
     if (transmitter.transmitted_packet >= maximum_packet) {
         macState = MAC_States_Set::LinkError;
@@ -128,13 +125,14 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
         if (tmp) {
             mes[2]->setText("preamble detecked " + std::to_string(receiver.received_packet) + ", " + std::to_string(transmitter.transmitted_packet), 
                 juce::NotificationType::dontSendNotification);
-            macState = MAC_States_Set::RxFrame;
+            macState = MAC_States_Set::RxFrame;            
             return;
         }
     }
     /// RxFrame
     else if (macState == MAC_States_Set::RxFrame) {
         Rx_Frame_Received_Type tmp = receiver.decode_one_packet(inBuffer, outBuffer, num_samples);
+        std::cout << "received packet type: " << (int)tmp << std::endl;
         switch (tmp) {
             case Rx_Frame_Received_Type::error:
                 macState = MAC_States_Set::Idle;

@@ -58,6 +58,8 @@ class MainContentComponent;
 #include "MAC.h"
 #include <JuceHeader.h>
 
+std::vector<float> in_data;
+
 namespace my_log {
 #include <iostream>
 #include <Windows.h>
@@ -112,6 +114,8 @@ public:
           mes1.setText("null", juce::NotificationType::dontSendNotification);
           mes2.setText("null", juce::NotificationType::dontSendNotification);
           mes3.setText("null", juce::NotificationType::dontSendNotification);
+
+          Write("inBuffer_log.txt", in_data);
         };
         addAndMakeVisible(stopButton);
 
@@ -225,6 +229,9 @@ public:
                 mac.TxPending = false;
                 if (mac.wait) {
                     mac.TxPending = false;
+                }
+                for (int i = 0; i < num_samples; ++i) {
+                    in_data.emplace_back(inBuffer[i]);
                 }
                 mac.refresh_MAC(inBuffer, outBuffer, num_samples);
             }

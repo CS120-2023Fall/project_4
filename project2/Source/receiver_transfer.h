@@ -17,7 +17,6 @@ constexpr const int MAC_PACKET_SAMPLES = PREAMBLE_SIZE + (OVERHEAD_SYMBOLS + PAC
 constexpr const int PHY_PACKET_SAMPLES = PREAMBLE_SIZE + (CRC_SYMBOLS+ PACKET_DATA_SIZE ) * samples_per_symbol;//how many samples in a phy packet
 
 enum class  Frame_Type {
-    unknown = 0,
     ack = 0b01,
     data = 0b10
 };
@@ -114,7 +113,10 @@ public:
                 int src = (header_vec[3] << 2) + (header_vec[4] << 1) + header_vec[5];
                 int type = (header_vec[6] << 1) + header_vec[7];
                 // error
-                if (dest == MY_MAC_ADDRESS || Frame_Type(type) == Frame_Type::unknown) {
+                if (dest == MY_MAC_ADDRESS || Frame_Type(type) != Frame_Type::ack || Frame_Type(type) != Frame_Type::data) {
+                    std::cout << "error packet" << std::endl;
+                    std::cout << decode_buffer.size() << std::endl;
+                    Write("error_data_log.txt", decode_buffer);
                     decode_buffer.clear();
                     return error;
                 }
@@ -165,13 +167,14 @@ public:
         return still_receiving;
 
     }
+    
     /// outBuffer is not used,inBuffer is the input ,read num_samples sample from input
     /// detect the preamble if  preamble detected return true,else false
     /// after detecting it auto enter the decode_state and initialize the receiver(decode_buffer will have 200samples)    
     bool detect_frame(const float *inBuffer, float *outBuffer, int num_samples)
     {
         bool detected = false;
-        double scale = 10;
+        double scale = 1;
         for (int i = 0; i < num_samples; i++) {
             double current_sample;
 
@@ -191,7 +194,6 @@ public:
             double sum = 0;
             for (int j = 0; j < size; j++) {
                 sum += preamble[j] * sync_buffer[j];
-
             }
             sum /= 200;
 
@@ -203,7 +205,7 @@ public:
             else {
                 // if (receive_num - start_index >= 240 && start_index > 0)
 
-                if (receive_buffer.size() - start_index > 200 && start_index > 0) {
+                if (receive_buffer.size() - start_index > 100 && start_index > 0) {
                     decode_buffer = vector_from_start_to_end(receive_buffer, start_index + 1, receive_buffer.size());//start to decode
                     for (int j = i+1; j < num_samples; j++) {
                         decode_buffer.push_back(inBuffer[j]);
