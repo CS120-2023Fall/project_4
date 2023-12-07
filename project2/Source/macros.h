@@ -20,6 +20,6 @@
 // how many samples represent a bit
 #define NUM_SAMPLES_PER_BIT 4
 
-#define MY_MAC_ADDRESS 0b001
-#define OTHER_MAC_ADDRESS 0b010
+#define MY_MAC_ADDRESS 0b010
+#define OTHER_MAC_ADDRESS 0b001
 
