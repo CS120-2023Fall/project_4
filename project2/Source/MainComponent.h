@@ -88,6 +88,14 @@ public:
         };
         addAndMakeVisible(stopButton);
 
+        testButton.setButtonText("Test");
+        testButton.setSize(60, 40);
+        testButton.setCentrePosition(120, 240);
+        testButton.onClick = [this] {juceState = juce_States_Set::TEST; 
+        mes0.setText("testing", juce::NotificationType::dontSendNotification);};
+        addAndMakeVisible(testButton);
+
+
         // transmit and receive button
         T_and_R_Button.setButtonText("transmit and receive");
         T_and_R_Button.setSize(110, 40);
@@ -186,18 +194,24 @@ public:
             //    return;
             //}
             if (juceState == juce_States_Set::T_AND_R) {
-                mac.TxPending = false;
+                mac.TxPending = true;
                 if (mac.wait) {
                     mac.TxPending = false;
                 }
                 mac.refresh_MAC(inBuffer, outBuffer, num_samples);
             }
-            else
+            else if (juceState == juce_States_Set::STOP)
             {
 
                 for (int i = 0; i < num_samples; i++) {
                     outBuffer[i] = 0;
                 }
+            }
+            else if (juceState == juce_States_Set::TEST) {
+                for (int i = 0; i < num_samples; ++i) {
+                    outBuffer[i] = std::sin(2 * pi * 100 * i/48000);
+                }
+                return;
             }
             for (int i = 0; i < num_samples; i++) {
                 double tmp = outBuffer[i];
@@ -227,7 +241,8 @@ private:
     bool isPlayingPredefined{ false };
     enum class juce_States_Set {
         STOP,
-        T_AND_R
+        T_AND_R,
+        TEST
     };
     juce::TextButton T_and_R_Button;
     // state of the outer program
