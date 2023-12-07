@@ -57,6 +57,33 @@
 class MainContentComponent;
 #include "MAC.h"
 #include <JuceHeader.h>
+
+namespace my_log {
+#include <iostream>
+#include <Windows.h>
+
+    class PrintDebugConsole {
+    public:
+        PrintDebugConsole() {
+            AllocConsole();
+            SetConsoleTitle(TEXT("Juce Debug Window"));
+            freopen("conin$", "r", stdin);
+            freopen("conout$", "w", stdout);
+            freopen("conout$", "w", stderr);
+
+            std::cout << "Welcome..." << std::endl;
+        }
+
+        ~PrintDebugConsole() {
+            fclose(stdin);
+            fclose(stdout);
+            fclose(stderr);
+            FreeConsole();
+        }
+    };
+
+    static const PrintDebugConsole staticPrintConsole = PrintDebugConsole();
+}
 /*
 This project refers to the JUCE official examples. (www.JUCE.com)
 
@@ -91,8 +118,9 @@ public:
         testButton.setButtonText("Test");
         testButton.setSize(60, 40);
         testButton.setCentrePosition(120, 240);
-        testButton.onClick = [this] {juceState = juce_States_Set::TEST; 
-        mes0.setText("testing", juce::NotificationType::dontSendNotification);};
+        testButton.onClick = [this] {juceState = juce_States_Set::TEST;
+        mes0.setText("testing", juce::NotificationType::dontSendNotification);
+        std::cout << "test button clicked" << std::endl; };
         addAndMakeVisible(testButton);
 
 

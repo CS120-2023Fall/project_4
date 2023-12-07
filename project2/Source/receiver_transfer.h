@@ -123,6 +123,7 @@ public:
                     decode_buffer.clear();
                     return valid_ack;
                 }
+                // data
                 else if (Frame_Type(type) == Frame_Type::data) {
                     int start_position = NUM_HEADER_BITS;
                     for (int j = start_position; j < start_position + NUM_SAMPLES_PER_BIT * NUM_PACKET_DATA_BITS; j += NUM_SAMPLES_PER_BIT) {
