@@ -1,20 +1,8 @@
-/*
-  ==============================================================================
-
-    modulate_and_demoudulate.cpp
-    Created: 12 Nov 2023 5:48:49pm
-    Author:  zzl
-
-  ==============================================================================
-*/
 #pragma once
 #include "transmitter.h"
-#define CRC_BITS 8
-#define DEST_BITS 3
-#define SRC_BITS 3
-#define TYPE_BITS 2
-#define PACKET_NUM_BITS 8//MAC LAYER need it
-constexpr const int OVERHEAD_SYMBOLS = (CRC_BITS+ PACKET_NUM_BITS + DEST_BITS + SRC_BITS + TYPE_BITS) / BITS_PER_SYMBOL;//overhead of CRC +PACKET_NUM+DEST+SRC+TYPE
+#include "macros.h"
+
+constexpr const int OVERHEAD_SYMBOLS = (NUM_CRC_BITS+ PACKET_NUM_BITS + NUM_DEST_BITS + NUM_SRC_BITS + NUM_TYPE_BITS) / BITS_PER_SYMBOL;//overhead of CRC +PACKET_NUM+DEST+SRC+TYPE
 
 class Modulater {
 
@@ -86,7 +74,7 @@ public:
 
     bool check_crc_one_packet(const std::vector<unsigned int>& symbols,int start_index=0) {//check the packet if it satisfy crc_check then return true else return false
         unsigned int crc_offset = 8 / BITS_PER_SYMBOL;
-        unsigned int data_offset = (CRC_BITS +PACKET_NUM_BITS+ DEST_BITS + SRC_BITS + TYPE_BITS) / BITS_PER_SYMBOL;
+        unsigned int data_offset = (NUM_CRC_BITS +PACKET_NUM_BITS+ NUM_DEST_BITS + NUM_SRC_BITS + NUM_TYPE_BITS) / BITS_PER_SYMBOL;
         std::vector<unsigned int > data_symbols=vector_from_start_to_end(symbols,start_index+data_offset,start_index+data_offset+PACKET_DATA_SIZE);//received data slice
         std::vector<unsigned int> crc_symbols = vector_from_start_to_end(symbols,start_index,start_index+crc_offset);//received symbols
         std::vector<bool> data_bits = from_symbols_to_bits(data_symbols,BITS_PER_SYMBOL);// translate the packet symbols to data
@@ -146,7 +134,4 @@ public:
         return number;
 
     }
-
-
-
 };

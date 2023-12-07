@@ -250,8 +250,9 @@ std::vector<T> connect(const std::vector<T>& A, const std::vector<T>& B) {//conn
 
 	return data;
 }
+// insert B to A at start_index[0,start_index) B,[start_index,A[A.size()-1]]
 template<typename T>
-std::vector<T>insert(const std::vector<T>& A, const std::vector<T>& B, int start_index) {//insert B to A at start_index[0,start_index) B,[start_index,A[A.size()-1]]
+std::vector<T>insert(const std::vector<T>& A, const std::vector<T>& B, int start_index) {
 	std::vector<T>data;
 	for (int i = 0; i < start_index; i++) {
 		data.push_back(A[i]);

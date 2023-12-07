@@ -1,35 +1,21 @@
 #pragma once
 #include<deque>
 #include "modulate_and_demoudulate.h"
+#include "macros.h"
 
-#define NUM_HEADER_BITS 8
-#define NUM_DEST_BITS 3
-#define NUM_SRC_BITS 3
-#define NUM_TYPE_BITS 2
-//////////////////////////////
-#define MY_MAC_ADDRESS 0b001
-////////////////////////////////
-#define RECEND_THRESHOLD 5
+
 /// //////////////////////////
 ///  set the macros appropriately!!!
-/// //////////////////////////
 #define QUIET_THRESHOLD 4
+
 constexpr const int maximum_packet = 50000 / PACKET_DATA_SIZE / BITS_PER_SYMBOL;
-constexpr const int CRC_SYMBOLS = CRC_BITS / BITS_PER_SYMBOL;//number of symbols in crc
+constexpr const int CRC_SYMBOLS = NUM_CRC_BITS / BITS_PER_SYMBOL;//number of symbols in crc
 std::vector<double > empty=std::vector<double>(0);
 std::deque<double> empty_deque=std::deque<double>(0,0.0);
 constexpr const int samples_per_symbol = samples_per_bit;
 constexpr const int MAC_PACKET_SAMPLES = PREAMBLE_SIZE + (OVERHEAD_SYMBOLS + PACKET_DATA_SIZE) * samples_per_symbol;//how many samples in a mac packet
 constexpr const int PHY_PACKET_SAMPLES = PREAMBLE_SIZE + (CRC_SYMBOLS+ PACKET_DATA_SIZE ) * samples_per_symbol;//how many samples in a phy packet
-//enum class MAC_States_Set {
-//    Idle,
-//    CarrierSense,
-//    RxFrame,
-//    TxFrame,
-//    TxACK,
-//    ACKTimeout,
-//    LinkError
-//};
+
 enum class  Frame_Type {
     unknown = 0,
     ack = 0b01,
@@ -71,6 +57,22 @@ public:
         Write_bin(bits, "OUTPUT_CSMA.bin");
 
     }
+
+    // decode a bit
+    // return a bit
+    /// sample_buffer: The function gets samples from this buffer
+    /// start_index: start at which position to decode
+    /// after_end_index: position after the end position
+    int decode_a_bit(std::vector<double> &sample_buffer, int start_index) {
+        if (sample_buffer[start_index] < 0 && sample_buffer[start_index + 1] < 0 &&
+            sample_buffer[start_index + 2] > 0 && sample_buffer[start_index + 3] > 0) {
+            return 0;
+        }
+        else {
+            return 1;
+        }
+    }
+
         // inBuffer: input ,outBuffer: not used ,num_samples: sample from input
         // try to read the num_samples sample from inBuffer,if the accumulated buffer still cannot achieve a packet,return still_receiving,if it satisfies a packet samples
         // return whether it is valid_ack,valid_data,or error,if valid_data,push the translated data symbols into symbol_code
@@ -79,74 +81,90 @@ public:
         // 1 VALID_ACK,
         // 2 VALID_DATA
     Rx_Frame_Received_Type decode_one_packet(const float *inBuffer, float *outBuffer, int num_samples) {
+        double scale = 1;
         for (int i = 0; i < num_samples; i++) {
-            outBuffer[i] = 0;
-        }
-        double scale = 10;
-        for (int i = 0; i < num_samples; i++) {
-           
             decode_buffer.push_back(scale*inBuffer[i]);
-          /*  if (decode_buffer.size() >= samples_per_symbol * (OVERHEAD_SYMBOLS)) {
-                auto decode_detect = vector_from_start_to_end(decode_buffer, 0, samples_per_symbol * OVERHEAD_SYMBOLS);
-                std::vector<unsigned int >symbols = demoudulator->Demodulate(decode_detect, 0);
-                std::vector<unsigned int> overhead = vector_from_start_to_end(symbols, 0, OVERHEAD_SYMBOLS);
-                std::vector<bool> overhead_bits = from_symbols_to_bits(overhead, BITS_PER_SYMBOL);
-                unsigned int packet_num = from_bits_vector_to_unsigned_int(vector_from_start_to_end(overhead_bits, CRC_BITS, CRC_BITS + PACKET_NUM_BITS));
-                int type = ((int)overhead_bits[overhead_bits.size() - 2]) * 2 + (int)overhead_bits[overhead_bits.size() - 1];
-                int packet_destination = (overhead_bits[16] << 2) + (overhead_bits[17] << 1) + overhead_bits[18];
-                if (type == 0 || packet_destination == MY_MAC_ADDRESS) {
+            //if (decode_buffer.size() >= samples_per_symbol * (OVERHEAD_SYMBOLS)) {
+            //    auto decode_detect = vector_from_start_to_end(decode_buffer, 0, samples_per_symbol * OVERHEAD_SYMBOLS);
+            //    std::vector<unsigned int >symbols = demoudulator->Demodulate(decode_detect, 0);
+            //    std::vector<unsigned int> overhead = vector_from_start_to_end(symbols, 0, OVERHEAD_SYMBOLS);
+            //    std::vector<bool> overhead_bits = from_symbols_to_bits(overhead, BITS_PER_SYMBOL);
+            //    unsigned int packet_num = from_bits_vector_to_unsigned_int(vector_from_start_to_end(overhead_bits, CRC_BITS, CRC_BITS + PACKET_NUM_BITS));
+            //    int type = ((int)overhead_bits[overhead_bits.size() - 2]) * 2 + (int)overhead_bits[overhead_bits.size() - 1];
+            //    int packet_destination = (overhead_bits[16] << 2) + (overhead_bits[17] << 1) + overhead_bits[18];
+            //    if (type == 0 || packet_destination == MY_MAC_ADDRESS) {
+            //        decode_buffer.clear();
+            //        return error;
+            //    }
+            //    else if((Frame_Type)type==Frame_Type::ack) {
+            //        decode_buffer.clear();
+            //        return valid_ack;
+            //    }
+            //}
+            if (decode_buffer.size() >= (NUM_MAC_HEADER_BITS+ NUM_PACKET_DATA_BITS)  * NUM_SAMPLES_PER_BIT) {
+                std::vector<int> header_vec;
+                for (int j = 0; j < NUM_HEADER_BITS; ++j) {
+                    header_vec.emplace_back(decode_a_bit(decode_buffer, j * NUM_SAMPLES_PER_BIT));
+                }
+
+                int dest = (header_vec[0] << 2) + (header_vec[1] << 1) + header_vec[2];
+                int src = (header_vec[3] << 2) + (header_vec[4] << 1) + header_vec[5];
+                int type = (header_vec[6] << 1) + header_vec[7];
+                // error
+                if (dest == MY_MAC_ADDRESS || Frame_Type(type) == Frame_Type::unknown) {
                     decode_buffer.clear();
                     return error;
                 }
-                else if((Frame_Type)type==Frame_Type::ack) {
+                // ack
+                if (Frame_Type(type) == Frame_Type::ack) {
                     decode_buffer.clear();
                     return valid_ack;
                 }
-            }*/
-            if (decode_buffer.size() == samples_per_symbol * (PACKET_DATA_SIZE + OVERHEAD_SYMBOLS)) {
-                std::vector<unsigned int >symbols = demoudulator->Demodulate(decode_buffer, 0);//demoudulate them all
-                //if (!demoudulator->check_crc_one_packet(symbols, 0)) //valid ERROR FREE
-                if(true)
-                {
-                    std::vector<unsigned int> overhead = vector_from_start_to_end(symbols, 0, OVERHEAD_SYMBOLS);
-                    std::vector<bool> overhead_bits = from_symbols_to_bits(overhead, BITS_PER_SYMBOL);
-                    unsigned int packet_num = from_bits_vector_to_unsigned_int(vector_from_start_to_end(overhead_bits, CRC_BITS, CRC_BITS + PACKET_NUM_BITS));
-                    int type = ((int)overhead_bits[overhead_bits.size() - 2]) * 2 + (int)overhead_bits[overhead_bits.size() - 1];
-                    if (Frame_Type(type) == Frame_Type::ack) {
-                        decode_buffer.clear();
-                        return valid_ack;
+                else if (Frame_Type(type) == Frame_Type::data) {
+                    int start_position = NUM_HEADER_BITS;
+                    for (int j = start_position; j < start_position + NUM_SAMPLES_PER_BIT * NUM_PACKET_DATA_BITS; j += NUM_SAMPLES_PER_BIT) {
+                        symbol_code.emplace_back(decode_a_bit(decode_buffer, j));
                     }
-                    else if(Frame_Type(type)==Frame_Type::data) {
-                        int offset = OVERHEAD_SYMBOLS;
-                        if (packet_num >= received_packet) {//not repeat then push them all
-                            for (int i = offset; i < symbols.size(); i++) {
-                                symbol_code.push_back(symbols[i]);
-                            }
-                        }
-                        decode_buffer.clear();
-                        return valid_data;
-                    }
-                    else {
-                        decode_buffer.clear();
-                        return error;
-                    }
-
-                }
-                else {
                     decode_buffer.clear();
-                    return error;
+                    return valid_data;
                 }
+
+                
+                // demoudulate them all
+                //std::vector<int> data_bits;
+
+                ////if (!demoudulator->check_crc_one_packet(symbols, 0)) //valid ERROR FREE
+                //std::vector<unsigned int> overhead = vector_from_start_to_end(symbols, 0, OVERHEAD_SYMBOLS);
+                //std::vector<bool> overhead_bits = from_symbols_to_bits(overhead, BITS_PER_SYMBOL);
+                //unsigned int packet_num = from_bits_vector_to_unsigned_int(vector_from_start_to_end(overhead_bits, NUM_CRC_BITS, NUM_CRC_BITS + PACKET_NUM_BITS));
+                //int type = ((int)overhead_bits[overhead_bits.size() - 2]) * 2 + (int)overhead_bits[overhead_bits.size() - 1];
+                //if (Frame_Type(type) == Frame_Type::ack) {
+                //    decode_buffer.clear();
+                //    return valid_ack;
+                //}
+                //else if(Frame_Type(type)==Frame_Type::data) {
+                //    int offset = OVERHEAD_SYMBOLS;
+                //    if (packet_num >= received_packet) {//not repeat then push them all
+                //        for (int i = offset; i < symbols.size(); i++) {
+                //            symbol_code.push_back(symbols[i]);
+                //        }
+                //    }
+                //    decode_buffer.clear();
+                //    return valid_data;
+                //}
+                //else {
+                //    decode_buffer.clear();
+                //    return error;
+                //}
             }
-
-
         }
         return still_receiving;
 
     }
+    /// outBuffer is not used,inBuffer is the input ,read num_samples sample from input
+    /// detect the preamble if  preamble detected return true,else false
+    /// after detecting it auto enter the decode_state and initialize the receiver(decode_buffer will have 200samples)    
     bool detect_frame(const float *inBuffer, float *outBuffer, int num_samples)
-        //outBuffer is not used,inBuffer is the input ,read num_samples sample from input
-        // detect the preamble if  preamble detected return true,else false
-            //after detecting it auto enter the decode_state and initialize the receiver(decode_buffer will have 200samples)    
     {
         bool detected = false;
         double scale = 10;
@@ -154,7 +172,6 @@ public:
             double current_sample;
 
             current_sample = scale*inBuffer[i];
-
 
             receive_power = (receive_power * 63 + current_sample * current_sample) / 64;
 
@@ -299,7 +316,7 @@ public:
                 packet_sequences.push_back(preamble[j]);
             }
             // push the preamble
-          //then the crc
+          // then the crc
             int packet_num = i / PACKET_DATA_SIZE;
             for (int j = 0; j < CRC_SYMBOL_SIZE; j++) {
                 int symbol_index_start = packet_num * CRC_SYMBOL_SIZE;
@@ -344,38 +361,105 @@ public:
             ack_packet.push_back(data_symbol_after_modulation[i]);
         }
     }
-    bool Add_one_packet(const float *inBuffer, float *outBuffer, int num_samples, Tx_frame_status status)
-        // inBuffer ,outBuffer and num_samples is not used,status indicate ack or data you want to add,it will add to the transmittion_buffer 
-        //if all the packet successfully transmitted return false,else add the data frame
-    {
-        //for (int i = 0; i < num_samples; i++) {
-        //    outBuffer[i] = 0;
-        //}
-        std::vector<double> current_packet;
-        if (status == Tx_ack) {
-            //modulate a ack
-            for (int i = 0; i < ack_packet.size(); i++) {
-                
-                current_packet.push_back(ack_packet[i]);
-            }
-            std::vector<double> mac_head = generate_the_Mac_head(Frame_Type::ack);
-            current_packet = insert(current_packet, mac_head, PREAMBLE_SIZE + CRC_SYMBOLS * samples_per_symbol);
-            for (int i = 0; i < current_packet.size(); i++) {
-                transmittion_buffer.push_back(current_packet[i]);
-            }
 
+    // convert a bit to samples and add the samples to the end fo dest.
+    void add_samples_from_a_bit(std::vector<double> &dest, int bit) {
+        if (bit == 0) {
+            dest.emplace_back(-0.9);
+            dest.emplace_back(-0.9);
+            dest.emplace_back(0.9);
+            dest.emplace_back(0.9);
         }
-        else {
-            if (transmitted_packet >= maximum_packet)return false;
-            for (int index = transmitted_packet * PHY_PACKET_SAMPLES; index < (transmitted_packet + 1) * PHY_PACKET_SAMPLES; index++) {
-                current_packet.push_back(packet_sequences[index]);
-            }
-            std::vector<double> mac_head = generate_the_Mac_head(Frame_Type::data);
-            current_packet = insert(current_packet, mac_head, PREAMBLE_SIZE + CRC_SYMBOLS * samples_per_symbol);
-            for (int i = 0; i < current_packet.size(); i++) {
-                transmittion_buffer.push_back(current_packet[i]);
-            }
+        else if (bit == 1) {
+            dest.emplace_back(0.9);
+            dest.emplace_back(0.9);
+            dest.emplace_back(-0.9);
+            dest.emplace_back(-0.9);
         }
+    }
+
+    /// inBuffer ,outBuffer and num_samples is not used,status indicate ack or data you want to add,it will add to the transmittion_buffer 
+    /// The return value is not used.
+    bool Add_one_packet(const float *inBuffer, float *outBuffer, int num_samples, Tx_frame_status status) {
+    // useful variables:
+    // 
+        // set these constants properly
+        constexpr int data_bits_in_a_packet = NUM_PACKET_DATA_BITS;
+        // 50000 / bits_in_a_packet is the number of packet
+        // 1 是从1 到-1
+        // 0 是从-1 到 1
+        // 4 个 sample 表示1 bit
+        if (status == Tx_data) {
+            if (transmitted_packet >= maximum_packet)
+                return false;
+        }
+            // add preamble
+            for (int i = 0; i < PREAMBLE_SIZE; ++i) {
+                transmittion_buffer.emplace_back(preamble[i]);
+            }
+            // No crc, no packet number. add destination, source, type.
+            int concatenate = (OTHER_MAC_ADDRESS << 5) + (MY_MAC_ADDRESS << 2)
+                + (status == Tx_data ? (int)Frame_Type::data : (int)Frame_Type::ack);
+            for (int i = NUM_DEST_BITS + NUM_SRC_BITS + NUM_TYPE_BITS - 1; i >= 0; --i) {
+                int bit = concatenate >> i & 1;
+                if (bit == 1) {
+                    add_samples_from_a_bit(transmittion_buffer, bit);
+                }
+                // 0
+                else {
+                    add_samples_from_a_bit(transmittion_buffer, bit);
+                }                
+            }
+            // data
+            if (status == Tx_data) {
+                for (int i = transmitted_packet * data_bits_in_a_packet; i < (transmitted_packet + 1) * data_bits_in_a_packet; ++i) {
+                    add_samples_from_a_bit(transmittion_buffer, (int)bits[i]);
+                }
+            }
+            else if (status == Tx_ack) {
+                for (int i = 0; i < PREAMBLE_SIZE + data_bits_in_a_packet + NUM_MAC_HEADER_BITS; ++i) {
+                    if (i % 16 < 8) {
+                        transmittion_buffer.emplace_back(0.5);
+                    }
+                    else {
+                        transmittion_buffer.emplace_back(-0.5);
+                    }
+                }
+            }
+        
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+        ////////////////////////////////////////////////////////////////////////////////////////////
+
+        //std::vector<double> current_packet;
+        //if (status == Tx_ack) {
+        //    //modulate a ack
+        //    for (int i = 0; i < ack_packet.size(); i++) {
+        //        
+        //        current_packet.push_back(ack_packet[i]);
+        //    }
+        //    std::vector<double> mac_head = generate_the_Mac_head(Frame_Type::ack);
+        //    current_packet = insert(current_packet, mac_head, PREAMBLE_SIZE + CRC_SYMBOLS * samples_per_symbol);
+        //    for (int i = 0; i < current_packet.size(); i++) {
+        //        transmittion_buffer.push_back(current_packet[i]);
+        //    }
+
+        //}
+        //// transmit data
+        //else {
+        //    if (transmitted_packet >= maximum_packet)
+        //        return false;
+        //    for (int index = transmitted_packet * PHY_PACKET_SAMPLES; index < (transmitted_packet + 1) * PHY_PACKET_SAMPLES; index++) {
+        //        current_packet.push_back(packet_sequences[index]);
+        //    }
+        //    std::vector<double> mac_head = generate_the_Mac_head(Frame_Type::data);
+        //    current_packet = insert(current_packet, mac_head, PREAMBLE_SIZE + CRC_SYMBOLS * samples_per_symbol);
+        //    for (int i = 0; i < current_packet.size(); i++) {
+        //        transmittion_buffer.push_back(current_packet[i]);
+        //    }
+        //}
+
+
         return true;
     }
     std::vector<double> generate_the_Mac_head(Frame_Type status) {

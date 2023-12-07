@@ -5,33 +5,15 @@
 #include<chrono>
 #include<cstdlib>
 #include "receiver_transfer.h"
-#include <Windows.h>
-//#include "transmitter.h"
+#include "macros.h"
 
-/////////////////////////////////
-// set these macros properly!///
-/////////////////////////////////
-#define NUM_HEADER_BITS 8
-#define NUM_DEST_BITS 3
-#define NUM_SRC_BITS 3
-#define NUM_TYPE_BITS 2
-#define MY_MAC_ADDRESS 0b001
-#define RECEND_THRESHOLD 8
 // milisecond
 #define ACK_TIME_OUT_THRESHOLD 10000
-//structure  PREAMBLE+CRC_SYMBOLS+PACKET_NUM_SYMBOLS+DEST+SRC+TYPE
-//enum class Rx_Frame_Received_Type {
-//    still_receiving = -1,
-//    error = 0,
-//    valid_ack = 0b01,
-//    valid_data = 0b10
-//};
+#define RECEND_THRESHOLD 8
 
 class MAC_Layer {
 public:
-    MAC_Layer() {
-
-    }
+    MAC_Layer() {}
     MAC_Layer(juce::Label *labels[], int num_labels) {
         if (num_labels > 5) {
             assert(0);
@@ -202,9 +184,6 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
     }
     /// CarrierSense
     else if (macState == MAC_States_Set::CarrierSense) {
-        //for (int i = 0; i < num_samples; i++) {
-        //    outBuffer[i] = 0;
-        //}
         if (receiver.if_channel_quiet(inBuffer, num_samples)) {
             macState = MAC_States_Set::TxFrame;
             if (transmitter.transmitted_packet >= 1) {
@@ -212,9 +191,6 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
                 xxxx++;
             }
             bool feedback = transmitter.Add_one_packet(inBuffer, outBuffer, num_samples, Tx_frame_status::Tx_data);
-            //ackTimeOut_valid = true;
-            //beforeTime_ack = std::chrono::steady_clock::now();
-            //backoff_exp = 0;
             return;
         }
         else {
