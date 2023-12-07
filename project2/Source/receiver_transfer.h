@@ -51,7 +51,10 @@ public:
     }
     void Write_symbols()
     {
-        std::vector<bool>bits = from_symbols_to_bits(symbol_code,BITS_PER_SYMBOL);
+        std::vector<bool>bits(symbol_code.size());
+        for (int i = 0; i < symbol_code.size(); ++i) {
+            bits[i] = (bool)symbol_code[i];
+        }
         Write("project2_bits_receiver.txt", bits);
         demoudulator->Write_max();
         Write_bin(bits, "OUTPUT_CSMA.bin");
