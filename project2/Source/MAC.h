@@ -145,10 +145,10 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
                 macState = MAC_States_Set::Idle;
                 mes[2]->setText("Received ack: " + std::to_string(transmitter.transmitted_packet), 
                     juce::NotificationType::dontSendNotification);
-                if (transmitter.transmitted_packet >= 2) {
-                    int xxxx = 1;
-                    xxxx++;
-                }
+                //if (transmitter.transmitted_packet >= 2) {
+                //    int xxxx = 1;
+                //    xxxx++;
+                //}
                 wait = false;
                 // set backoff
                 backoff_exp = rand() % 5 + 4;
@@ -186,10 +186,10 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
     else if (macState == MAC_States_Set::CarrierSense) {
         if (receiver.if_channel_quiet(inBuffer, num_samples)) {
             macState = MAC_States_Set::TxFrame;
-            if (transmitter.transmitted_packet >= 1) {
-                int xxxx = 1;
-                xxxx++;
-            }
+            //if (transmitter.transmitted_packet >= 1) {
+            //    int xxxx = 1;
+            //    xxxx++;
+            //}
             bool feedback = transmitter.Add_one_packet(inBuffer, outBuffer, num_samples, Tx_frame_status::Tx_data);
             return;
         }
@@ -202,10 +202,10 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
     }
     /// TxFrame
     else if (macState == MAC_States_Set::TxFrame) {
-        if (transmitter.transmitted_packet >= 1) {
-            int xxxx = 1;
-            xxxx++;
-        }
+        //if (transmitter.transmitted_packet >= 1) {
+        //    int xxxx = 1;
+        //    xxxx++;
+        //}
 
         bool finish= transmitter.Trans(inBuffer, outBuffer, num_samples);
 

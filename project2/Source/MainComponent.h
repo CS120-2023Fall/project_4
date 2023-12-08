@@ -53,10 +53,10 @@
 #include<cmath>
 
 #pragma once
-#define PI acos(-1)
 class MainContentComponent;
 #include "MAC.h"
 #include <JuceHeader.h>
+#define PI juce::MathConstants<double>::pi
 
 std::vector<float> in_data;
 
@@ -181,8 +181,7 @@ public:
         dev_info.sampleRate = 48000;
         deviceManager.setAudioDeviceSetup(dev_info, false);
     }
-
-   
+       
 
     ~MainContentComponent() override {
         shutdownAudio();
@@ -230,6 +229,7 @@ public:
                 if (mac.wait) {
                     mac.TxPending = false;
                 }
+                if (RECORD_IN_LIVE)
                 for (int i = 0; i < num_samples; ++i) {
                     in_data.emplace_back(inBuffer[i]);
                 }
@@ -237,7 +237,6 @@ public:
             }
             else if (juceState == juce_States_Set::STOP)
             {
-
                 for (int i = 0; i < num_samples; i++) {
                     outBuffer[i] = 0;
                 }

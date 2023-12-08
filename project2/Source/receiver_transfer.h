@@ -60,16 +60,18 @@ public:
 
     }
 
-    // decode a bit
-    // return a bit
+    // decode a 4 samples
+    // return a bit, 0 or 1.
     /// sample_buffer: The function gets samples from this buffer
     /// start_index: start at which position to decode
     /// after_end_index: position after the end position
     int decode_a_bit(std::vector<double> &sample_buffer, int start_index) {
+        // 0
         if (sample_buffer[start_index] < 0 && sample_buffer[start_index + 1] < 0 &&
             sample_buffer[start_index + 2] > 0 && sample_buffer[start_index + 3] > 0) {
             return 0;
         }
+        // 1
         else {
             return 1;
         }
@@ -105,15 +107,21 @@ public:
             //}
             if (decode_buffer.size() >= (NUM_MAC_HEADER_BITS+ NUM_PACKET_DATA_BITS)  * NUM_SAMPLES_PER_BIT) {
                 std::vector<int> header_vec;
-                for (int j = 0; j < NUM_HEADER_BITS; ++j) {
+                // j is the bit index
+                for (int j = 0; j < NUM_MAC_HEADER_BITS; ++j)  {
                     header_vec.emplace_back(decode_a_bit(decode_buffer, j * NUM_SAMPLES_PER_BIT));
                 }
-
+                
                 int dest = (header_vec[0] << 2) + (header_vec[1] << 1) + header_vec[2];
                 int src = (header_vec[3] << 2) + (header_vec[4] << 1) + header_vec[5];
                 int type = (header_vec[6] << 1) + header_vec[7];
-                // error
-                if (dest == MY_MAC_ADDRESS || Frame_Type(type) != Frame_Type::ack || Frame_Type(type) != Frame_Type::data) {
+                int packet_num = 0;
+                for (int j = NUM_MAC_HEADER_BITS - PACKET_NUM_BITS, offset = PACKET_NUM_BITS; 
+                    j < NUM_MAC_HEADER_BITS; ++j, --offset) {
+                    packet_num += header_vec[j] << offset;
+                }
+                // packet error
+                if (dest == MY_MAC_ADDRESS || (Frame_Type(type) != Frame_Type::ack && Frame_Type(type) != Frame_Type::data)) {
                     std::cout << "error packet" << std::endl;
                     std::cout << decode_buffer.size() << std::endl;
                     Write("error_data_log.txt", decode_buffer);
@@ -127,7 +135,7 @@ public:
                 }
                 // data
                 else if (Frame_Type(type) == Frame_Type::data) {
-                    int start_position = NUM_HEADER_BITS;
+                    int start_position = NUM_MAC_HEADER_BITS;
                     for (int j = start_position; j < start_position + NUM_SAMPLES_PER_BIT * NUM_PACKET_DATA_BITS; j += NUM_SAMPLES_PER_BIT) {
                         symbol_code.emplace_back(decode_a_bit(decode_buffer, j));
                     }
@@ -182,10 +190,10 @@ public:
 
             receive_power = (receive_power * 63 + current_sample * current_sample) / 64;
 
-            if (current_sample > 0.1) {
-                int xxxxx = 1;
-                xxxxx++;
-            }
+            //if (current_sample > 0.1) {
+            //    int xxxxx = 1;
+            //    xxxxx++;
+            //}
             receive_buffer.push_back(current_sample);
             sync_buffer.push_back(current_sample);
             sync_buffer.pop_front();
@@ -199,14 +207,13 @@ public:
 
             if (sum > receive_power * 2 && sum > sync_max && sum > 0.05) {
                 sync_max = sum;
-
                 start_index = receive_buffer.size() - 1;
             }
             else {
-                // if (receive_num - start_index >= 240 && start_index > 0)
-
                 if (receive_buffer.size() - start_index > 100 && start_index > 0) {
-                    decode_buffer = vector_from_start_to_end(receive_buffer, start_index + 1, receive_buffer.size());//start to decode
+                    // Copy samples from receiver_buffer to decode_buffer
+                    // //start to decode
+                    decode_buffer = vector_from_start_to_end(receive_buffer, start_index + 1, receive_buffer.size());
                     for (int j = i+1; j < num_samples; j++) {
                         decode_buffer.push_back(inBuffer[j]);
                     }//receive for
@@ -221,7 +228,6 @@ public:
                     detected = true;
                     return detected;
                 }
-
             }
         }
         return detected;
@@ -256,7 +262,6 @@ public:
     Demoudulator* demoudulator;
 };
 
-//the trans structure is PREAMBLE+ CRC+DEST+SRC+TYPE+DATA
 enum Tx_frame_status {
     Tx_ack = 0,
     Tx_data = 1
@@ -368,7 +373,7 @@ public:
         }
     }
 
-    // convert a bit to samples and add the samples to the end fo dest.
+    // convert a bit to 4 samples and add the samples to the end fo dest.
     void add_samples_from_a_bit(std::vector<double> &dest, int bit) {
         if (bit == 0) {
             dest.emplace_back(-0.9);
@@ -403,10 +408,15 @@ public:
             for (int i = 0; i < PREAMBLE_SIZE; ++i) {
                 transmittion_buffer.emplace_back(preamble[i]);
             }
-            // No crc, no packet number. add destination, source, type.
+            // Add a gap between preamble and others.
+            for (int i = 0; i < 10; ++i) {
+                transmittion_buffer.emplace_back(0.0);
+            }
+            // No crc. Add destination, source, type, packet number.
             int concatenate = (OTHER_MAC_ADDRESS << 5) + (MY_MAC_ADDRESS << 2)
                 + (status == Tx_data ? (int)Frame_Type::data : (int)Frame_Type::ack);
-            for (int i = NUM_DEST_BITS + NUM_SRC_BITS + NUM_TYPE_BITS - 1; i >= 0; --i) {
+            concatenate = (concatenate << PACKET_NUM_BITS) + transmitted_packet + 1;
+            for (int i = NUM_MAC_HEADER_BITS - 1; i >= 0; --i) {
                 int bit = concatenate >> i & 1;
                 if (bit == 1) {
                     add_samples_from_a_bit(transmittion_buffer, bit);
@@ -433,65 +443,12 @@ public:
                 }
             }
         
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////
-        ////////////////////////////////////////////////////////////////////////////////////////////
-
-        //std::vector<double> current_packet;
-        //if (status == Tx_ack) {
-        //    //modulate a ack
-        //    for (int i = 0; i < ack_packet.size(); i++) {
-        //        
-        //        current_packet.push_back(ack_packet[i]);
-        //    }
-        //    std::vector<double> mac_head = generate_the_Mac_head(Frame_Type::ack);
-        //    current_packet = insert(current_packet, mac_head, PREAMBLE_SIZE + CRC_SYMBOLS * samples_per_symbol);
-        //    for (int i = 0; i < current_packet.size(); i++) {
-        //        transmittion_buffer.push_back(current_packet[i]);
-        //    }
-
-        //}
-        //// transmit data
-        //else {
-        //    if (transmitted_packet >= maximum_packet)
-        //        return false;
-        //    for (int index = transmitted_packet * PHY_PACKET_SAMPLES; index < (transmitted_packet + 1) * PHY_PACKET_SAMPLES; index++) {
-        //        current_packet.push_back(packet_sequences[index]);
-        //    }
-        //    std::vector<double> mac_head = generate_the_Mac_head(Frame_Type::data);
-        //    current_packet = insert(current_packet, mac_head, PREAMBLE_SIZE + CRC_SYMBOLS * samples_per_symbol);
-        //    for (int i = 0; i < current_packet.size(); i++) {
-        //        transmittion_buffer.push_back(current_packet[i]);
-        //    }
-        //}
-
-
         return true;
     }
-    std::vector<double> generate_the_Mac_head(Frame_Type status) {
-        std::vector<bool>bits_tmp;
-        std::vector<bool> packet_num_bits = from_unsigned_int_to_bits_vector_filled_with_zero(transmitted_packet, 8);
-        std::vector<bool> dest_bits = { 1,1,1 };
-        std::vector<bool> src_bits = { 0,0,0 };
-        std::vector<bool> type_bits;
-        if (status == Frame_Type::ack) {
-            type_bits = { 0,1 };
-        }
-        else {
-            type_bits = { 1,0 };
-        }
-        bits_tmp = connect(bits_tmp, packet_num_bits);
-        bits_tmp = connect(bits_tmp, dest_bits);
-        bits_tmp = connect(bits_tmp, src_bits);
-        bits_tmp = connect(bits_tmp, type_bits);
-        std::vector<double> head = modulater->Modulate(translate_from_bits_vector_to_unsigned_int_vector(bits_tmp, BITS_PER_SYMBOL), 0);
-        return head;
-    }
 
-    bool Trans(const float *inBuffer, float *outBuffer, int num_samples)
-        //inBuffer is not used,outBuffer is used to read from tranmittion_buffer,and read the num_samples sample
+    //inBuffer is not used,outBuffer is used to read from tranmittion_buffer,and read the num_samples sample
     //trans finished then return true
-    
+    bool Trans(const float *inBuffer, float *outBuffer, int num_samples)    
     {
         bool silence = false;
 
@@ -504,7 +461,6 @@ public:
 
                     outBuffer[i] = transmittion_buffer[transfer_num];
                     transfer_num++;
-
                 }
             }
             return silence;
