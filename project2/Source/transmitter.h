@@ -204,6 +204,7 @@ public:
         Write_symbols();// for debug
         generate_knots();//to determine the amplitude range 
 
+
     }
     void generate_knots() {
         unsigned int ask_num = 1 << (seperation_num - 1);

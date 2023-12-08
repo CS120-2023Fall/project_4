@@ -116,6 +116,12 @@ public:
           mes3.setText("null", juce::NotificationType::dontSendNotification);
 
           Write("inBuffer_log.txt", in_data);
+          in_data.clear();
+        //std::cout << "bits: ";
+        //for (int i = 0; i < 16; ++i) {
+        //    std::cout << default_trans_wire.bits[i];
+        //}
+        //std::cout << std::endl;
         };
         addAndMakeVisible(stopButton);
 
@@ -215,15 +221,6 @@ public:
             int num_samples = bufferToFill.buffer->getNumSamples();
             auto* outBuffer = bufferToFill.buffer->getWritePointer(channel, bufferToFill.startSample);
             KeepSilence( inBuffer, outBuffer,  num_samples);
-            //if (start_csma && juceState != juce_States_Set::T_AND_R) {
-            //    juceState = juce_States_Set::T_AND_R;
-            //    mac.TxPending = true;
-            //    if (mac.wait) {
-            //        mac.TxPending = false;
-            //    }
-            //    mac.refresh_MAC(inBuffer, outBuffer, num_samples);
-            //    return;
-            //}
             if (juceState == juce_States_Set::T_AND_R) {
                 mac.TxPending = false;
                 if (mac.wait) {
@@ -247,13 +244,13 @@ public:
                 }
                 return;
             }
-            for (int i = 0; i < num_samples; i++) {
-                double tmp = outBuffer[i];
-                if (i >= PREAMBLE_SIZE) {
-                    int xxxxx1 = 111;
-                    xxxxx1++;
-                }
-            }
+            //for (int i = 0; i < num_samples; i++) {
+            //    double tmp = outBuffer[i];
+                //if (i >= PREAMBLE_SIZE) {
+                //    int xxxxx1 = 111;
+                //    xxxxx1++;
+                //}
+            //}
             if (mac.macState == MAC_Layer::MAC_States_Set::LinkError) {
                 stopButton.triggerClick();
             }   

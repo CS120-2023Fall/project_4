@@ -24,5 +24,5 @@
 #define OTHER_MAC_ADDRESS 0b001
 
 // record real time inBuffer. Stop in time. Otherwise, the vector bombs.
-#define RECORD_IN_LIVE true
+#define RECORD_IN_LIVE false
 
