@@ -129,6 +129,7 @@ public:
                     j < NUM_MAC_HEADER_BITS; ++j, --offset) {
                     packet_num += header_vec[j] << offset;
                 }
+                std::cout << "packet num: " << packet_num << std::endl;
                 std::cout << "== data? " << (Frame_Type(type) == Frame_Type::data) << std::endl;
                 // packet error
                 if (dest != MY_MAC_ADDRESS || (Frame_Type(type) != Frame_Type::ack && Frame_Type(type) != Frame_Type::data)) {
@@ -193,7 +194,7 @@ public:
                 start_index = receive_buffer.size() - 1;
             }
             else {
-                if (receive_buffer.size() - start_index > 100 && start_index > 0) {
+                if (receive_buffer.size() - start_index > 200 && start_index > 0) {
                     // Copy samples from receiver_buffer to decode_buffer
                     // //start to decode
                     decode_buffer = vector_from_start_to_end(receive_buffer, start_index + 1, receive_buffer.size());

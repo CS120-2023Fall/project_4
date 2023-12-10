@@ -222,7 +222,7 @@ public:
             auto* outBuffer = bufferToFill.buffer->getWritePointer(channel, bufferToFill.startSample);
             KeepSilence( inBuffer, outBuffer,  num_samples);
             if (juceState == juce_States_Set::T_AND_R) {
-                mac.TxPending = false;
+                mac.TxPending = true;
                 if (mac.wait) {
                     mac.TxPending = false;
                 }
