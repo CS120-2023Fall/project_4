@@ -21,6 +21,12 @@ public:
         for (int i = 0; i < num_labels; ++i) {
             mes[i] = labels[i];
         }
+        if (START_TRANS_FIRST) {
+            startTransmitting = true;
+        }
+        else {
+            startTransmitting = false;
+        }
     };
 
     ~MAC_Layer() {
@@ -37,6 +43,7 @@ public:
         TxPending = true;
         wait = false;
         backoff_exp = 0;
+        startTransmitting = START_TRANS_FIRST;
     }
     
     //void reset_receiving_info();
@@ -62,6 +69,7 @@ public:
     std::deque<int> received_data;
     bool wait = false;
     int start_for_wait_sample=0;
+    bool startTransmitting;
 
 private:
     int mac_address{ MY_MAC_ADDRESS };
@@ -182,6 +190,7 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
             backoff_exp = rand() % 5 + 4;
             macState = MAC_States_Set::Idle;
        }
+        startTransmitting = true;
         return;
     }
     /// CarrierSense

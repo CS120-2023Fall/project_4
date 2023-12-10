@@ -25,4 +25,6 @@
 
 // record real time inBuffer. Stop in time. Otherwise, the vector bombs.
 #define RECORD_IN_LIVE false
+// We do not have to start the two computers simultaneously
+#define START_TRANS_FIRST true
 
