@@ -150,7 +150,7 @@ public:
                 if (dest != MY_MAC_ADDRESS || (Frame_Type(type) != Frame_Type::ack && Frame_Type(type) != Frame_Type::data)) {
                     std::cout << "error packet" << std::endl;
                     std::cout << decode_buffer.size() << std::endl;
-                    Write("error_data_log.txt", decode_buffer);
+                    Write("decode_log.txt", decode_buffer);
                     decode_buffer.clear();
                     return error;
                 }
@@ -158,17 +158,18 @@ public:
                 if (Frame_Type(type) == Frame_Type::ack) {
                     decode_buffer.clear();
                     std::cout << "exit after receiving ack" << std::endl;
-                    Write("error_data_log.txt", decode_buffer);
+                    Write("decode_log.txt", decode_buffer);
                     return valid_ack;
                 }
                 // data
                 else if (Frame_Type(type) == Frame_Type::data) {
+                    // start_position: bit index, remember x4
                     int start_position = NUM_MAC_HEADER_BITS;
-                    for (int j = start_position; j < start_position + NUM_SAMPLES_PER_BIT * NUM_PACKET_DATA_BITS; j += NUM_SAMPLES_PER_BIT) {
-                        symbol_code.emplace_back(decode_a_bit(decode_buffer, j));
+                    for (int bit_index = start_position; bit_index < start_position + NUM_PACKET_DATA_BITS; ++bit_index) {
+                        symbol_code.emplace_back(decode_a_bit(decode_buffer, bit_index *4));
                     }
                     std::cout << "exit after receiving data" << std::endl;
-                    Write("error_data_log.txt", decode_buffer);
+                    Write("decode_log.txt", decode_buffer);
                     decode_buffer.clear();
                     return valid_data;
                 }
@@ -437,10 +438,10 @@ public:
             for (int i = 0; i < 10; ++i) {
                 transmittion_buffer.emplace_back(0.0);
             }
-            // No crc. Add destination, source, type, packet number.
+            // No crc. Add destination, source, type, packet number(start from 0).
             int concatenate = (OTHER_MAC_ADDRESS << 5) + (MY_MAC_ADDRESS << 2)
                 + (status == Tx_data ? (int)Frame_Type::data : (int)Frame_Type::ack);
-            concatenate = (concatenate << PACKET_NUM_BITS) + transmitted_packet + 1;
+            concatenate = (concatenate << PACKET_NUM_BITS) + transmitted_packet;
             for (int i = NUM_MAC_HEADER_BITS - 1; i >= 0; --i) {
                 int bit = concatenate >> i & 1;
                 if (bit == 1) {

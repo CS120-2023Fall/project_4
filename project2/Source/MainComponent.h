@@ -244,13 +244,6 @@ public:
                 }
                 return;
             }
-            //for (int i = 0; i < num_samples; i++) {
-            //    double tmp = outBuffer[i];
-                //if (i >= PREAMBLE_SIZE) {
-                //    int xxxxx1 = 111;
-                //    xxxxx1++;
-                //}
-            //}
             if (mac.macState == MAC_Layer::MAC_States_Set::LinkError) {
                 stopButton.triggerClick();
             }   
