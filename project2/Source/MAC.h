@@ -40,7 +40,7 @@ public:
         transmitter.Initialize();
         resend = 0;
         ackTimeOut_valid = false;
-        TxPending = true;
+        //TxPending = true;
         wait = false;
         backoff_exp = 0;
         startTransmitting = START_TRANS_FIRST;
@@ -189,7 +189,8 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
         if (finish) {
             backoff_exp = rand() % 5 + 4;
             macState = MAC_States_Set::Idle;
-       }
+        }
+        // The computer has received a packet. It can start to transmit.
         startTransmitting = true;
         return;
     }

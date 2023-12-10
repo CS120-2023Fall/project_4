@@ -151,11 +151,11 @@ public:
         mes0.setText("csma_task", juce::NotificationType::dontSendNotification); };
         addAndMakeVisible(csmaWithJamButton);
 
-        csmaButton.setButtonText("csma_with_jam");
-        csmaButton.setSize(110, 40);
-        csmaButton.setCentrePosition(440, 200);
-        csmaButton.onClick = [this] {start_csma = true;
-        mes0.setText("csma_with_jam_task", juce::NotificationType::dontSendNotification); };
+        //csmaButton.setButtonText("csma_with_jam");
+        //csmaButton.setSize(110, 40);
+        //csmaButton.setCentrePosition(440, 200);
+        //csmaButton.onClick = [this] {start_csma = true;
+        //mes0.setText("csma_with_jam_task", juce::NotificationType::dontSendNotification); };
         //addAndMakeVisible(csmaButton);
         // 
         // message
@@ -193,13 +193,9 @@ public:
         shutdownAudio();
     }
 
-    void prepareToPlay(int samplesPerBlockExpected, double sampleRate) override {
-        transportSource.prepareToPlay(samplesPerBlockExpected, sampleRate);
-    }
+    void prepareToPlay(int samplesPerBlockExpected, double sampleRate) override {}
 
-    void releaseResources() override {
-        transportSource.releaseResources();
-    }
+    void releaseResources() override {}
 
     void getNextAudioBlock(const juce::AudioSourceChannelInfo& bufferToFill) override
     {
@@ -229,6 +225,7 @@ public:
                 if (mac.wait) {
                     mac.TxPending = false;
                 }
+                // Record the inBuffer. Watch out memory overflow.
                 if (RECORD_IN_LIVE)
                 for (int i = 0; i < num_samples; ++i) {
                     in_data.emplace_back(inBuffer[i]);
@@ -261,11 +258,7 @@ private:
     juce::Random random;
     juce::TextButton playButton, stopButton, recordButton, recordWithPredefinedButton, openButton, testButton, transmitButton, transmit_with_wireButton, receiverButton, receiver_with_wireButton;
     juce::TextButton csmaButton,csmaWithJamButton;
-    std::unique_ptr<juce::FileChooser> chooser;
     juce::AudioFormatManager formatManager;
-    std::unique_ptr<juce::AudioFormatReaderSource> readerSource;
-    juce::AudioTransportSource transportSource;
-    bool isPlayingPredefined{ false };
     enum class juce_States_Set {
         STOP,
         T_AND_R,
