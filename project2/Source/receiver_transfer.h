@@ -86,7 +86,7 @@ public:
         // 2 VALID_DATA
     Rx_Frame_Received_Type decode_one_packet(const float *inBuffer, float *outBuffer, int num_samples) {
         double scale = 1;
-        double zero_detect_threashold = 0.15;
+        double zero_detect_threashold = 0.2;
         // detech head, go over 0 value interval between preamble and mac header.
         bool data_synced = false;
         if (!decode_buffer.empty()) {
@@ -112,24 +112,8 @@ public:
                     continue;
                 }
             }
-            decode_buffer.push_back(scale*inBuffer[i]);
-            //if (decode_buffer.size() >= samples_per_symbol * (OVERHEAD_SYMBOLS)) {
-            //    auto decode_detect = vector_from_start_to_end(decode_buffer, 0, samples_per_symbol * OVERHEAD_SYMBOLS);
-            //    std::vector<unsigned int >symbols = demoudulator->Demodulate(decode_detect, 0);
-            //    std::vector<unsigned int> overhead = vector_from_start_to_end(symbols, 0, OVERHEAD_SYMBOLS);
-            //    std::vector<bool> overhead_bits = from_symbols_to_bits(overhead, BITS_PER_SYMBOL);
-            //    unsigned int packet_num = from_bits_vector_to_unsigned_int(vector_from_start_to_end(overhead_bits, CRC_BITS, CRC_BITS + PACKET_NUM_BITS));
-            //    int type = ((int)overhead_bits[overhead_bits.size() - 2]) * 2 + (int)overhead_bits[overhead_bits.size() - 1];
-            //    int packet_destination = (overhead_bits[16] << 2) + (overhead_bits[17] << 1) + overhead_bits[18];
-            //    if (type == 0 || packet_destination == MY_MAC_ADDRESS) {
-            //        decode_buffer.clear();
-            //        return error;
-            //    }
-            //    else if((Frame_Type)type==Frame_Type::ack) {
-            //        decode_buffer.clear();
-            //        return valid_ack;
-            //    }
-            //}
+            decode_buffer.push_back(scale * inBuffer[i]);
+
             if (decode_buffer.size() >= (NUM_MAC_HEADER_BITS+ NUM_PACKET_DATA_BITS)  * NUM_SAMPLES_PER_BIT) {
                 std::vector<int> header_vec;
                 // j is the bit index
@@ -141,7 +125,7 @@ public:
                 int type = (header_vec[6] << 1) + header_vec[7];
                 std::cout << "dest, src, type: " << dest << src << type << std::endl;
                 int packet_num = 0;
-                for (int j = NUM_MAC_HEADER_BITS - PACKET_NUM_BITS, offset = PACKET_NUM_BITS; 
+                for (int j = NUM_MAC_HEADER_BITS - PACKET_NUM_BITS, offset = PACKET_NUM_BITS - 1; 
                     j < NUM_MAC_HEADER_BITS; ++j, --offset) {
                     packet_num += header_vec[j] << offset;
                 }
@@ -174,33 +158,6 @@ public:
                     return valid_data;
                 }
 
-                
-                // demoudulate them all
-                //std::vector<int> data_bits;
-
-                ////if (!demoudulator->check_crc_one_packet(symbols, 0)) //valid ERROR FREE
-                //std::vector<unsigned int> overhead = vector_from_start_to_end(symbols, 0, OVERHEAD_SYMBOLS);
-                //std::vector<bool> overhead_bits = from_symbols_to_bits(overhead, BITS_PER_SYMBOL);
-                //unsigned int packet_num = from_bits_vector_to_unsigned_int(vector_from_start_to_end(overhead_bits, NUM_CRC_BITS, NUM_CRC_BITS + PACKET_NUM_BITS));
-                //int type = ((int)overhead_bits[overhead_bits.size() - 2]) * 2 + (int)overhead_bits[overhead_bits.size() - 1];
-                //if (Frame_Type(type) == Frame_Type::ack) {
-                //    decode_buffer.clear();
-                //    return valid_ack;
-                //}
-                //else if(Frame_Type(type)==Frame_Type::data) {
-                //    int offset = OVERHEAD_SYMBOLS;
-                //    if (packet_num >= received_packet) {//not repeat then push them all
-                //        for (int i = offset; i < symbols.size(); i++) {
-                //            symbol_code.push_back(symbols[i]);
-                //        }
-                //    }
-                //    decode_buffer.clear();
-                //    return valid_data;
-                //}
-                //else {
-                //    decode_buffer.clear();
-                //    return error;
-                //}
             }
         }
         return still_receiving;
@@ -459,13 +416,8 @@ public:
                 }
             }
             else if (status == Tx_ack) {
-                for (int i = 0; i < PREAMBLE_SIZE + data_bits_in_a_packet + NUM_MAC_HEADER_BITS; ++i) {
-                    if (i % 16 < 8) {
-                        transmittion_buffer.emplace_back(0.5);
-                    }
-                    else {
-                        transmittion_buffer.emplace_back(-0.5);
-                    }
+                for (int i = 0; i < data_bits_in_a_packet; ++i) {
+                    add_samples_from_a_bit(transmittion_buffer, 0);
                 }
             }
         
@@ -488,6 +440,10 @@ public:
                     outBuffer[i] = transmittion_buffer[transfer_num];
                     transfer_num++;
                 }
+            }
+            if (transfer_num >= transmittion_buffer.size()) {
+                transfer_num = 0;
+                transmittion_buffer.clear();
             }
             return silence;
     }
