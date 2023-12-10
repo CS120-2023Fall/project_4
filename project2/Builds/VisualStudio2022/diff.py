@@ -3,6 +3,7 @@ import struct
 
 fOurOutput = open("project2_bits_receiver.txt", mode = "r", encoding="utf-8")
 fGroundTruth = open("INPUT_bin.txt", mode = "r", encoding="utf-8")
+# diff result
 fOut = open("diff2.txt", mode = "w", encoding="utf-8")
 
 groundTruth = fGroundTruth.readlines()[0]
