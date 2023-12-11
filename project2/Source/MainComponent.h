@@ -52,6 +52,7 @@
 #define _USE_MATH_DEFINES
 #include<cmath>
 
+
 #pragma once
 class MainContentComponent;
 #include "MAC.h"
@@ -225,6 +226,10 @@ public:
                 if (mac.wait) {
                     mac.TxPending = false;
                 }
+                /////////////////////// delete me ////////////////////
+                //mac.TxPending = false;
+                // //////////////////////////////////////////////
+               
                 // Record the inBuffer. Watch out memory overflow.
                 if (RECORD_IN_LIVE)
                 for (int i = 0; i < num_samples; ++i) {

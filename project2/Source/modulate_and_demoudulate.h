@@ -106,16 +106,16 @@ public:
         int sample_find_max_end = start_index + samples_per_bit * 1 / 4;
         for (int i = sample_start; i < sample_end; ++i) {
             double abs = decode_buffer[i] > 0 ? decode_buffer[i] : -decode_buffer[i];
-            max_amplitude = std::max(abs,max_amplitude);
+            max_amplitude = abs < max_amplitude ? max_amplitude : abs;
         }
         //double abs = decode_buffer[start_index] > 0 ? decode_buffer[start_index] : -decode_buffer[start_index];
      
-        for (int i = sample_start; i < sample_end; ++i) {
-            double abs = decode_buffer[i] > 0 ? decode_buffer[i] : -decode_buffer[i];
-            if (abs < max_amplitude) {
-                second_max_amplitude = std::max(abs, second_max_amplitude);
-            }
-        }
+        //for (int i = sample_start; i < sample_end; ++i) {
+        //    double abs = decode_buffer[i] > 0 ? decode_buffer[i] : -decode_buffer[i];
+        //    if (abs < max_amplitude) {
+        //        second_max_amplitude = std::max(abs, second_max_amplitude);
+        //    }
+        //}
         max_amplitude /= scale;
         max_vector.push_back(max_amplitude);
         if (sum > 0) {
