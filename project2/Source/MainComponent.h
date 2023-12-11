@@ -112,9 +112,6 @@ public:
           mac.macState = MAC_Layer::MAC_States_Set::Idle;
 
           mes0.setText("stop", juce::NotificationType::dontSendNotification);
-          mes1.setText("null", juce::NotificationType::dontSendNotification);
-          mes2.setText("null", juce::NotificationType::dontSendNotification);
-          mes3.setText("null", juce::NotificationType::dontSendNotification);
 
           Write("inBuffer_log.txt", in_data);
           in_data.clear();
@@ -140,7 +137,11 @@ public:
         T_and_R_Button.setSize(110, 40);
         T_and_R_Button.setCentrePosition(220, 200);
         T_and_R_Button.onClick = [this] {juceState = juce_States_Set::T_AND_R; mac.Start();
-        mes0.setText("transmit and receive", juce::NotificationType::dontSendNotification); };
+        mes0.setText("transmit and receive", juce::NotificationType::dontSendNotification); 
+        mes1.setText("null", juce::NotificationType::dontSendNotification);
+        mes2.setText("null", juce::NotificationType::dontSendNotification);
+        mes3.setText("null", juce::NotificationType::dontSendNotification);
+            };
         addAndMakeVisible(T_and_R_Button);
 
 
@@ -220,7 +221,7 @@ public:
             KeepSilence( inBuffer, outBuffer,  num_samples);
             if (juceState == juce_States_Set::T_AND_R) {
                 mac.TxPending = false;
-                if (mac.startTransmitting) {
+                if (mac.startTransmitting && mac.transmitter.transmitted_packet * NUM_PACKET_DATA_BITS  < 50000) {
                     mac.TxPending = true;
                 }
                 if (mac.wait) {
@@ -250,6 +251,8 @@ public:
                 return;
             }
             if (mac.macState == MAC_Layer::MAC_States_Set::LinkError) {
+                std::cout << "received: " << mac.receiver.received_packet << std::endl;
+                std::cout << "transitted: " << mac.transmitter.transmitted_packet << std::endl;
                 stopButton.triggerClick();
             }   
             break;

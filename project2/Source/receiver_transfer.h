@@ -50,11 +50,10 @@ public:
     }
     void Write_symbols()
     {
-
         Write("project2_bits_receiver.txt", symbol_code);
     }
 
-    // decode a 4 samples
+    // decode a NUM_SAMPLES_PER_BIT samples
     // return a bit, 0 or 1.
     /// sample_buffer: The function gets samples from this buffer
     /// start_index: start at which position to decode
@@ -62,7 +61,7 @@ public:
     int decode_a_bit(std::vector<double> &sample_buffer, int start_index) {
         // 0
         if (sample_buffer[start_index] + sample_buffer[start_index + 1] < 0 &&
-            sample_buffer[start_index + 2] + sample_buffer[start_index + 3] > 0) {
+            sample_buffer[start_index + 3] + sample_buffer[start_index + 4] > 0) {
             return 0;
         }
         // 1
@@ -249,11 +248,8 @@ enum Tx_frame_status {
 class Transfer {
 public:
     Transfer() {
-        generate_ack_packet();
-        generate_packet_sequence();
     }
     void Initialize() { CRC_symbols.clear();
-        ack_data_symbols.clear();
         transfer_num = 0;
         transmittion_buffer.clear();
         transmitted_packet = 0;
@@ -262,106 +258,26 @@ public:
     std::vector<bool>bits = default_trans_wire.bits;
     std::vector<unsigned int> symbols = default_trans_wire.symbols;
     std::vector<double>preamble = default_trans_wire.preamble;
-    std::vector<double> carrier_waves_0 = default_trans_wire.carrier_waves_0;
-    std::vector<double> carrier_waves_1 = default_trans_wire.carrier_waves_1;
     std::vector<double > packet_sequences;
-    std::vector<double> ack_packet;
     std::vector<bool> CRC_bits;
     std::vector<unsigned> CRC_symbols;
-    std::vector<bool> ack_data_symbols = std::vector<bool>(PACKET_DATA_SIZE * BITS_PER_SYMBOL, 0);
     int transfer_num = 0;
     int transmitted_packet = 0;
-    Modulater *modulater = new Modulater;
-    void generate_packet_sequence() {
-        int size = symbols.size();
-        unsigned int ask_num = 1 << (BITS_PER_SYMBOL - 1);// if 4 bits then 8 amplitude
-        int bits_size = bits.size();
-        unsigned int data_bits_per_packet = BITS_PER_SYMBOL * PACKET_DATA_SIZE;
-        for (int i = 0; i < bits_size; i += data_bits_per_packet) {
-            std::vector<bool>bits_slice;
-            uint8_t crc_8;
-            for (int j = i; j < i + data_bits_per_packet; j++) {
-                bits_slice.push_back(bits[j]);
-            }
-            int data_size;
-            unsigned char *data = unsigned_int_to_unsigned_char_star(from_bits_vector_to_unsigned_int(bits_slice), data_size);
-            crc_8 = CRC::CalculateBits(data, data_bits_per_packet, CRC::CRC_8());
-            std::vector<bool> crc_8_vector = from_uint8_t_to_bits_vector(crc_8);
-            for (int i = 0; i <= 7; i++) {
-                CRC_bits.push_back(crc_8_vector[i]);
-            }
 
-
-        }
-        CRC_symbols = translate_from_bits_vector_to_unsigned_int_vector(CRC_bits, BITS_PER_SYMBOL);
-        for (int i = 0; i < size; i += PACKET_DATA_SIZE) {
-
-            int start = i;
-            int end = i + PACKET_DATA_SIZE;
-            if (end >= size) {
-                end = size;
-            }
-            for (int j = 0; j < PREAMBLE_SIZE; j++) {
-                packet_sequences.push_back(preamble[j]);
-            }
-            // push the preamble
-          // then the crc
-            int packet_num = i / PACKET_DATA_SIZE;
-            for (int j = 0; j < CRC_SYMBOL_SIZE; j++) {
-                int symbol_index_start = packet_num * CRC_SYMBOL_SIZE;
-                unsigned int symbol = CRC_symbols[symbol_index_start + j];
-                auto carrier = (symbol & 1) == 1 ? carrier_waves_1 : carrier_waves_0;//using the last bit to determine psk
-                float amplitude = max_amplitude * float((symbol >> 1) + 1) / ask_num;
-                for (int k = 0; k < samples_per_bit; k++) {
-                    packet_sequences.push_back(amplitude * carrier[k]);
-                }
-            }
-
-            for (int symbol_index = start; symbol_index < end; symbol_index++) {
-                unsigned int symbol = symbols[symbol_index];
-                auto carrier = (symbol & 1) == 1 ? carrier_waves_1 : carrier_waves_0;//using the last bit to determine psk
-                float amplitude = max_amplitude * float((symbol >> 1) + 1) / ask_num;
-                for (int j = 0; j < samples_per_bit; j++) {
-                    packet_sequences.push_back(amplitude * carrier[j]);
-                }
-            }
-            //modulation
-
-        }
-    }
-    void generate_ack_packet() {
-        for (int i = 0; i < PREAMBLE_SIZE; i++) {
-            ack_packet.push_back(preamble[i]);
-        }
-        std::vector<bool> data_bits = ack_data_symbols;
-        unsigned int data_bits_per_packet = BITS_PER_SYMBOL * PACKET_DATA_SIZE;
-        uint8_t crc_8;
-        int data_size;
-        unsigned char *data = unsigned_int_to_unsigned_char_star(from_bits_vector_to_unsigned_int(data_bits), data_size);
-        crc_8 = CRC::CalculateBits(data, data_bits_per_packet, CRC::CRC_8());
-        std::vector<unsigned int> crc_8_symbol = translate_from_bits_vector_to_unsigned_int_vector(from_uint8_t_to_bits_vector(crc_8), BITS_PER_SYMBOL);
-        auto crc_8_symbol_after_modulation = modulater->Modulate(crc_8_symbol, 0);
-        auto data_symbol_after_modulation = modulater->Modulate(translate_from_bits_vector_to_unsigned_int_vector(ack_data_symbols, BITS_PER_SYMBOL), 0);
-        for (int i = 0; i < crc_8_symbol_after_modulation.size(); i++) {
-            ack_packet.push_back(crc_8_symbol_after_modulation[i]);
-        }
-        //also modulate for mac 
-        for (int i = 0; i < data_symbol_after_modulation.size(); i++) {
-            ack_packet.push_back(data_symbol_after_modulation[i]);
-        }
-    }
 
     // convert a bit to 4 samples and add the samples to the end fo dest.
     void add_samples_from_a_bit(std::vector<double> &dest, int bit) {
         if (bit == 0) {
             dest.emplace_back(-0.9);
             dest.emplace_back(-0.9);
+            dest.emplace_back(0);
             dest.emplace_back(0.9);
             dest.emplace_back(0.9);
         }
         else if (bit == 1) {
             dest.emplace_back(0.9);
             dest.emplace_back(0.9);
+            dest.emplace_back(0);
             dest.emplace_back(-0.9);
             dest.emplace_back(-0.9);
         }

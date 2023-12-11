@@ -16,7 +16,7 @@
 // packet index length
 #define PACKET_NUM_BITS 8
 // how many samples represent a bit
-#define NUM_SAMPLES_PER_BIT 4
+#define NUM_SAMPLES_PER_BIT 5
 
 #define NUM_MAC_HEADER_BITS (NUM_DEST_BITS + NUM_SRC_BITS + NUM_TYPE_BITS + PACKET_NUM_BITS)
 
