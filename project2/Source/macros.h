@@ -12,7 +12,7 @@
 #define NUM_DEST_BITS 3
 #define NUM_SRC_BITS 3
 #define NUM_TYPE_BITS 2
-#define NUM_PACKET_DATA_BITS 500
+#define NUM_PACKET_DATA_BITS 10000
 // packet index length
 #define PACKET_NUM_BITS 8
 // how many samples represent a bit
@@ -20,8 +20,8 @@
 
 #define NUM_MAC_HEADER_BITS (NUM_DEST_BITS + NUM_SRC_BITS + NUM_TYPE_BITS + PACKET_NUM_BITS)
 
-#define MY_MAC_ADDRESS 0b010
-#define OTHER_MAC_ADDRESS 0b001
+#define MY_MAC_ADDRESS 0b001
+#define OTHER_MAC_ADDRESS 0b010
 
 // record real time inBuffer. Stop in time. Otherwise, the vector bombs.
 #define RECORD_IN_LIVE false

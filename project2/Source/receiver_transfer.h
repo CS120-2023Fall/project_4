@@ -50,13 +50,10 @@ public:
     }
     void Write_symbols()
     {
-        std::vector<bool>bits(symbol_code.size());
-        for (int i = 0; i < symbol_code.size(); ++i) {
-            bits[i] = (bool)symbol_code[i];
-        }
-        Write("project2_bits_receiver.txt", bits);
+    
+        Write("project2_bits_receiver.txt",symbol_code);
         demoudulator->Write_max();
-        Write_bin(bits, "OUTPUT_CSMA.bin");
+       // Write_bin(bits, "OUTPUT_CSMA.bin");
 
     }
 
@@ -103,7 +100,8 @@ public:
                 }
             }
         }
-        for (int i = 0; i < num_samples; i++) {
+        for (int i = 0; i < num_samples; i++) 
+        {
             if (!data_synced && i >= 3) {
                 if (abs(inBuffer[i - 3]) + abs(inBuffer[i - 2]) + abs(inBuffer[i - 1]) + abs(inBuffer[i]) > zero_detect_threashold) {
                     data_synced = true;
@@ -114,10 +112,13 @@ public:
             }
             decode_buffer.push_back(scale * inBuffer[i]);
 
-            if (decode_buffer.size() >= (NUM_MAC_HEADER_BITS+ NUM_PACKET_DATA_BITS)  * NUM_SAMPLES_PER_BIT) {
+            if (decode_buffer.size() >= (NUM_MAC_HEADER_BITS+ NUM_PACKET_DATA_BITS)  * NUM_SAMPLES_PER_BIT)
+            {
+
                 std::vector<int> header_vec;
                 // j is the bit index
-                for (int j = 0; j < NUM_MAC_HEADER_BITS; ++j)  {
+                for (int j = 0; j < NUM_MAC_HEADER_BITS; ++j)  
+                {
                     header_vec.emplace_back(decode_a_bit(decode_buffer, j * NUM_SAMPLES_PER_BIT));
                 }                
                 int dest = (header_vec[0] << 2) + (header_vec[1] << 1) + header_vec[2];
@@ -136,12 +137,12 @@ public:
                     std::cout << "error packet" << std::endl;
                     std::cout << decode_buffer.size() << std::endl;
                     Write("decode_log.txt", decode_buffer);
-                    decode_buffer.clear();
+                    decode_buffer=empty;
                     return error;
                 }
                 // ack
                 if (Frame_Type(type) == Frame_Type::ack) {
-                    decode_buffer.clear();
+                    decode_buffer=empty;
                     std::cout << "exit after receiving ack" << std::endl;
                     Write("decode_log.txt", decode_buffer);
                     return valid_ack;
@@ -155,10 +156,14 @@ public:
                     }
                     std::cout << "exit after receiving data" << std::endl;
                     Write("decode_log.txt", decode_buffer);
-                    decode_buffer.clear();
+                    decode_buffer=empty;
                     return valid_data;
                 }
-
+                else {
+                    std::cout << "else cir" << std::endl;
+                    decode_buffer = empty;
+                    return error;
+                }
             }
         }
         return still_receiving;
@@ -197,10 +202,16 @@ public:
                 if (receive_buffer.size() - start_index > 200 && start_index > 0) {
                     // Copy samples from receiver_buffer to decode_buffer
                     // //start to decode
+ /*                   std::cout << receive_buffer[start_index + 1] << std::endl;
+                    std::cout << receive_buffer[start_index + 2] << std::endl;
+                    std::cout << receive_buffer[start_index + 9] << std::endl;
+                    std::cout << receive_buffer[start_index + 10] << std::endl;*/
+                    decode_buffer = empty;
                     decode_buffer = vector_from_start_to_end(receive_buffer, start_index + 1, receive_buffer.size());
                     for (int j = i+1; j < num_samples; j++) {
                         decode_buffer.push_back(inBuffer[j]);
                     }//receive for
+ /*                   std::cout << "3.decode buffer after preamble: "<< decode_buffer.size() << std::endl;*/
                     receive_buffer.clear();
                     sync_buffer.clear();
                     for (int i = 0; i < PREAMBLE_SIZE; i++) {
@@ -237,7 +248,7 @@ public:
     std::vector<double> preamble = default_trans.preamble;
     std::vector<double> carrier_waves_1 = default_trans_wire.carrier_waves_1;
     std::vector<double> carrier_waves_0 = default_trans_wire.carrier_waves_0;
-    std::vector<unsigned int>symbol_code;
+    std::vector< int>symbol_code;
     std::vector<bool> bits;
     int start_index = -1;
     unsigned int received_packet = 0;
@@ -381,9 +392,9 @@ public:
         // set these constants properly
         constexpr int data_bits_in_a_packet = NUM_PACKET_DATA_BITS;
         // 50000 / bits_in_a_packet is the number of packet
-        // 1 是从1 到-1
-        // 0 是从-1 到 1
-        // 4 个 sample 表示1 bit
+        // 1 脢脟麓脫1 碌陆-1
+        // 0 脢脟麓脫-1 碌陆 1
+        // 4 赂枚 sample 卤铆脢戮1 bit
         if (status == Tx_data) {
             if (transmitted_packet >= maximum_packet)
                 return false;

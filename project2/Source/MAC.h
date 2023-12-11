@@ -133,7 +133,12 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
         if (tmp) {
             mes[2]->setText("preamble detecked " + std::to_string(receiver.received_packet) + ", " + std::to_string(transmitter.transmitted_packet), 
                 juce::NotificationType::dontSendNotification);
-            macState = MAC_States_Set::RxFrame;            
+            macState = MAC_States_Set::RxFrame;
+            std::cout << "detect_frame" << std::endl;
+            std::cout <<"receiver_buffer:" <<receiver.receive_buffer.size() << std::endl;
+            std::cout << "sync_buffer:" << receiver.sync_buffer.size() << std::endl;
+            std::cout << "decode_buffer:" << receiver.decode_buffer.size() << std::endl;
+            std::cout << "symbol_code:" << receiver.symbol_code.size() << std::endl;
             return;
         }
     }
@@ -157,10 +162,14 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
                 backoff_exp = rand() % 5 + 4;
                 return;
             case Rx_Frame_Received_Type::valid_data:
+                std::cout << "receiver_buffer:" << receiver.receive_buffer.size() << std::endl;
+                std::cout << "sync_buffer:" << receiver.sync_buffer.size() << std::endl;
+                std::cout << "decode_buffer:" << receiver.decode_buffer.size() << std::endl;
+                std::cout << "symbol_code:" << receiver.symbol_code.size() << std::endl;
                 macState = MAC_States_Set::TxACK;
                 receiver.received_packet += 1;
                 bool feedback = transmitter.Add_one_packet(inBuffer, outBuffer, num_samples, Tx_frame_status::Tx_ack);
-                backoff_exp = 10;
+                backoff_exp = rand() % 5 + 3;
                 beforeTime_backoff = std::chrono::steady_clock::now();
                 mes[1]->setText("Packet received: " + std::to_string(receiver.received_packet), juce::dontSendNotification);
                 /////////////////////// delete me £¡£¡£¡£¡£¡£¡£¡£¡£¡£¡£¡£¡£¡£¡£¡£¡

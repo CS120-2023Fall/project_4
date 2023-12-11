@@ -4,6 +4,8 @@
               addUsingNamespaceToJuceHeader="0" displaySplashScreen="1" jucerFormatVersion="1">
   <MAINGROUP id="ElBSs8" name="project2">
     <GROUP id="{C0B48D39-9DB0-C287-0898-4A39D011BC5B}" name="Source">
+      <FILE id="upxzQq" name="diff_part2.cpp" compile="1" resource="0" file="Source/diff_part2.cpp"/>
+      <FILE id="jyJPzS" name="macros.h" compile="0" resource="0" file="Source/macros.h"/>
       <FILE id="PhNmHh" name="CRC.h" compile="0" resource="0" file="Source/CRC.h"/>
       <FILE id="CWK2rq" name="fft.h" compile="0" resource="0" file="Source/fft.h"/>
       <FILE id="C9o21f" name="filter.h" compile="0" resource="0" file="Source/filter.h"/>
