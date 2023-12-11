@@ -9,7 +9,7 @@
 //#include <pcap.h>
 
 // milisecond
-#define ACK_TIME_OUT_THRESHOLD 10000
+#define ACK_TIME_OUT_THRESHOLD 5000
 #define RECEND_THRESHOLD 8
 
 class MAC_Layer {
@@ -85,6 +85,7 @@ private:
     // exponent of the backoff. 2^m - 1, millisecond
     int backoff_exp{ 1 };
     std::chrono::time_point < std::chrono::steady_clock> beforeTime_backoff{ std::chrono::steady_clock::now() };
+public:
     Receiver receiver;
     Transfer transmitter;
 };
@@ -133,7 +134,7 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
         bool tmp = receiver.detect_frame(inBuffer, outBuffer, num_samples);
         // 1. detect preamble, invoke detect_frame()
         if (tmp) {
-            mes[2]->setText("preamble detecked " + std::to_string(receiver.received_packet) + ", " + std::to_string(transmitter.transmitted_packet), 
+            mes[3]->setText("preamble detecked " + std::to_string(receiver.received_packet) + ", " + std::to_string(transmitter.transmitted_packet), 
                 juce::NotificationType::dontSendNotification);
             macState = MAC_States_Set::RxFrame;
             std::cout << "detect_frame" << std::endl;
@@ -225,10 +226,6 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
     }
     /// TxFrame
     else if (macState == MAC_States_Set::TxFrame) {
-        //if (transmitter.transmitted_packet >= 1) {
-        //    int xxxx = 1;
-        //    xxxx++;
-        //}
 
         bool finish= transmitter.Trans(inBuffer, outBuffer, num_samples);
 
