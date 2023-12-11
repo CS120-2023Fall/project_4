@@ -61,7 +61,7 @@ public:
     int decode_a_bit(std::vector<double> &sample_buffer, int start_index) {
         // 0
         if (sample_buffer[start_index] + sample_buffer[start_index + 1] < 0 &&
-            sample_buffer[start_index + 3] + sample_buffer[start_index + 4] > 0) {
+            sample_buffer[start_index + 2] + sample_buffer[start_index + 3] > 0) {
             return 0;
         }
         // 1
@@ -270,14 +270,12 @@ public:
         if (bit == 0) {
             dest.emplace_back(-0.9);
             dest.emplace_back(-0.9);
-            dest.emplace_back(0);
             dest.emplace_back(0.9);
             dest.emplace_back(0.9);
         }
         else if (bit == 1) {
             dest.emplace_back(0.9);
             dest.emplace_back(0.9);
-            dest.emplace_back(0);
             dest.emplace_back(-0.9);
             dest.emplace_back(-0.9);
         }
