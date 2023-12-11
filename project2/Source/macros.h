@@ -27,5 +27,5 @@
 #define RECORD_IN_LIVE false
 // We do not have to start the two computers simultaneously. The macro decides whether this
 // computer start transmitting first.
-#define START_TRANS_FIRST false
+#define START_TRANS_FIRST true
 

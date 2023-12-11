@@ -50,11 +50,8 @@ public:
     }
     void Write_symbols()
     {
-    
-        Write("project2_bits_receiver.txt",symbol_code);
-        demoudulator->Write_max();
-       // Write_bin(bits, "OUTPUT_CSMA.bin");
 
+        Write("project2_bits_receiver.txt", symbol_code);
     }
 
     // decode a 4 samples
@@ -142,9 +139,9 @@ public:
                 }
                 // ack
                 if (Frame_Type(type) == Frame_Type::ack) {
-                    decode_buffer=empty;
                     std::cout << "exit after receiving ack" << std::endl;
                     Write("decode_log.txt", decode_buffer);
+                    decode_buffer.clear();
                     return valid_ack;
                 }
                 // data
@@ -248,7 +245,7 @@ public:
     std::vector<double> preamble = default_trans.preamble;
     std::vector<double> carrier_waves_1 = default_trans_wire.carrier_waves_1;
     std::vector<double> carrier_waves_0 = default_trans_wire.carrier_waves_0;
-    std::vector< int>symbol_code;
+    std::vector<int>symbol_code;
     std::vector<bool> bits;
     int start_index = -1;
     unsigned int received_packet = 0;
@@ -386,7 +383,8 @@ public:
 
     /// inBuffer ,outBuffer and num_samples is not used,status indicate ack or data you want to add,it will add to the transmittion_buffer 
     /// The return value is not used.
-    bool Add_one_packet(const float *inBuffer, float *outBuffer, int num_samples, Tx_frame_status status) {
+    bool Add_one_packet(const float *inBuffer, float *outBuffer, int num_samples, Tx_frame_status status, 
+        unsigned int received_packet = 1) {
     // useful variables:
     // 
         // set these constants properly
@@ -410,7 +408,8 @@ public:
             // No crc. Add destination, source, type, packet number(start from 0).
             int concatenate = (OTHER_MAC_ADDRESS << 5) + (MY_MAC_ADDRESS << 2)
                 + (status == Tx_data ? (int)Frame_Type::data : (int)Frame_Type::ack);
-            concatenate = (concatenate << PACKET_NUM_BITS) + transmitted_packet;
+            concatenate = (concatenate << PACKET_NUM_BITS)
+                + (status == Tx_data ?  transmitted_packet : received_packet - 1);
             for (int i = NUM_MAC_HEADER_BITS - 1; i >= 0; --i) {
                 int bit = concatenate >> i & 1;
                 if (bit == 1) {
