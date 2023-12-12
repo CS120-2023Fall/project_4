@@ -152,7 +152,14 @@ public:
         csmaWithJamButton.onClick = [this] {start_csma = true; juceState = juce_States_Set::T_AND_R ; mac.Start();
         mes0.setText("csma_task", juce::NotificationType::dontSendNotification); };
         addAndMakeVisible(csmaWithJamButton);
-
+        recordButton.setButtonText("reflect_the_sound");
+        recordButton.setSize(110, 40);
+        recordButton.setCentrePosition(400, 200);
+        recordButton.onClick = [this] {
+            juceState = juce_States_Set::RECORD;
+            record_max = 0;
+        };
+        addAndMakeVisible(recordButton);
         //csmaButton.setButtonText("csma_with_jam");
         //csmaButton.setSize(110, 40);
         //csmaButton.setCentrePosition(440, 200);
@@ -228,7 +235,7 @@ public:
                     mac.TxPending = false;
                 }
                 /////////////////////// delete me ////////////////////
-                //mac.TxPending = false;
+                mac.TxPending = false;
                 // //////////////////////////////////////////////
                
                 // Record the inBuffer. Watch out memory overflow.
@@ -250,11 +257,21 @@ public:
                 }
                 return;
             }
+            else if (juceState == juce_States_Set::RECORD) {
+                
+                for (int i = 0; i < num_samples; ++i) {
+                    record_max =record_max>abs(inBuffer[i])?record_max:abs(inBuffer[i]);
+
+
+                }
+                mes0.setText("the record_max is :" + std::to_string(record_max),juce::dontSendNotification);
+            }
             if (mac.macState == MAC_Layer::MAC_States_Set::LinkError) {
                 std::cout << "received: " << mac.receiver.received_packet << std::endl;
                 std::cout << "transitted: " << mac.transmitter.transmitted_packet << std::endl;
                 stopButton.triggerClick();
             }   
+
             break;
         }
     }
@@ -267,10 +284,12 @@ private:
     juce::TextButton playButton, stopButton, recordButton, recordWithPredefinedButton, openButton, testButton, transmitButton, transmit_with_wireButton, receiverButton, receiver_with_wireButton;
     juce::TextButton csmaButton,csmaWithJamButton;
     juce::AudioFormatManager formatManager;
+    float record_max=0;
     enum class juce_States_Set {
         STOP,
         T_AND_R,
-        TEST
+        TEST,
+        RECORD,
     };
     juce::TextButton T_and_R_Button;
     // state of the outer program

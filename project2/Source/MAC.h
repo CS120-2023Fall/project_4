@@ -10,7 +10,7 @@
 
 // milisecond
 #define ACK_TIME_OUT_THRESHOLD 5000
-#define RECEND_THRESHOLD 8
+#define RECEND_THRESHOLD 4
 
 class MAC_Layer {
 public:
