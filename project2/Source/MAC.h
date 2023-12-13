@@ -1,5 +1,6 @@
 #pragma once
 #include<deque>
+#include<list>
 #include<assert.h>
 #include<JuceHeader.h>
 #include<chrono>
@@ -45,6 +46,7 @@ public:
         wait = false;
         backoff_exp = 0;
         startTransmitting = START_TRANS_FIRST;
+        RTT_log.clear();
     }
     
     //void reset_receiving_info();
@@ -85,6 +87,8 @@ private:
     // exponent of the backoff. 2^m - 1, millisecond
     int backoff_exp{ 1 };
     std::chrono::time_point < std::chrono::steady_clock> beforeTime_backoff{ std::chrono::steady_clock::now() };
+    std::chrono::time_point<std::chrono::steady_clock> send_Echo_time;
+    std::list<double> RTT_log;
 public:
     Receiver receiver;
     Transfer transmitter;
@@ -97,13 +101,12 @@ void KeepSilence(const float* inBuffer, float* outBuffer, int num_samples) {
 }
 void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_samples) {
 
-       // deal with every state
-    //if (transmitter.transmitted_packet >= maximum_packet) {
-    //    macState = MAC_States_Set::LinkError;
-    //}
-    /// Idle
     if (macState == MAC_States_Set::Idle) {
-
+        if (RTT_log.size() >= 10) {
+            Write("RTT_log.txt", RTT_log);
+            macState = MAC_States_Set::LinkError;
+            return;
+        }
         // 2. ack time out
         // ///////////////////////
         // pass ackTimeout state, exit directly
@@ -151,20 +154,27 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
 
         std::cout << "received packet type: " << (int)tmp << std::endl;
         switch (tmp) {
-            case Rx_Frame_Received_Type::error:
-                macState = MAC_States_Set::Idle;
-                return;
-            case Rx_Frame_Received_Type::still_receiving:
-                return;
-            case Rx_Frame_Received_Type::valid_ack:
-                ackTimeOut_valid = false;
-                transmitter.transmitted_packet += 1;//the next staus transmit the next packet
-                macState = MAC_States_Set::Idle;
-                mes[2]->setText("Received ack, transmitted packet: " + std::to_string(transmitter.transmitted_packet), 
-                    juce::NotificationType::dontSendNotification);
-                wait = false;
-                backoff_exp = rand() % 5 + 4;
-                return;
+        case Rx_Frame_Received_Type::error:
+            macState = MAC_States_Set::Idle;
+            return;
+        case Rx_Frame_Received_Type::still_receiving:
+            return;
+        case Rx_Frame_Received_Type::valid_ack:
+        {
+            ackTimeOut_valid = false;
+            transmitter.transmitted_packet += 1;//the next staus transmit the next packet
+            macState = MAC_States_Set::Idle;
+            mes[2]->setText("Received ack, transmitted packet: " + std::to_string(transmitter.transmitted_packet),
+                juce::NotificationType::dontSendNotification);
+            wait = false;
+            backoff_exp = rand() % 5 + 4;
+
+            // finish ping
+            std::chrono::steady_clock::time_point current = std::chrono::steady_clock::now();
+            double RTT = std::chrono::duration<double, std::milli>(current - send_Echo_time).count();
+            RTT_log.emplace_back(RTT);
+            return;
+        }
             case Rx_Frame_Received_Type::valid_data:
                 std::cout << "receiver_buffer:" << receiver.receive_buffer.size() << std::endl;
                 std::cout << "sync_buffer:" << receiver.sync_buffer.size() << std::endl;
@@ -236,6 +246,8 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
             macState = MAC_States_Set::Idle;
             wait = true;
         }
+        // set start time stamp
+        send_Echo_time = std::chrono::steady_clock::now();
     }
     /// ACKTimeout
     else if (macState == MAC_States_Set::ACKTimeout) {

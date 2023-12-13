@@ -119,7 +119,7 @@ public:
                 size = (NUM_MAC_HEADER_BITS + NUM_IP_HEADER_BITS)*NUM_SAMPLES_PER_BIT;
             }
             else {
-                size = (NUM_MAC_HEADER_BITS + NUM_PACKET_DATA_BITS) * NUM_SAMPLES_PER_BIT);
+                size = (NUM_MAC_HEADER_BITS + NUM_PACKET_DATA_BITS) * NUM_SAMPLES_PER_BIT;
             }
             if (decode_buffer.size() >= (NUM_MAC_HEADER_BITS)  * NUM_SAMPLES_PER_BIT)
             {

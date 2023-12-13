@@ -154,7 +154,7 @@ public:
         addAndMakeVisible(csmaWithJamButton);
         recordButton.setButtonText("reflect_the_sound");
         recordButton.setSize(110, 40);
-        recordButton.setCentrePosition(400, 200);
+        recordButton.setCentrePosition(440, 200);
         recordButton.onClick = [this] {
             juceState = juce_States_Set::RECORD;
             record_max = 0;
@@ -234,8 +234,10 @@ public:
                 if (mac.wait) {
                     mac.TxPending = false;
                 }
-                /////////////////////// delete me ////////////////////
-                mac.TxPending = false;
+                ///////////////////////  ////////////////////
+                if (ONLY_CSMA_RECEIVE) {
+                    mac.TxPending = false;
+                }
                 // //////////////////////////////////////////////
                
                 // Record the inBuffer. Watch out memory overflow.

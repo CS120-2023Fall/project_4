@@ -28,6 +28,8 @@
 // We do not have to start the two computers simultaneously. The macro decides whether this
 // computer start transmitting first.
 #define START_TRANS_FIRST false
+// only receive data and reply ack
+#define ONLY_CSMA_RECEIVE false
 
 #define IS_ROUTER true
 #define MY_IP 0x111

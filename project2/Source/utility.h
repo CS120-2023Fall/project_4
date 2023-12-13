@@ -108,12 +108,22 @@ inline void Write(const std::string& path, const std::vector<double>& data, std:
 	fprintf(file, "%s=[", name.c_str());
 	for (int i = 0; i < size; i++) {
 		fprintf(file, "%f,", data[i]);
-
-
 	}
 	fprintf(file, "];");
 	fclose(file);
 }
+
+inline void Write(const std::string &path, const std::list<double> &data) {
+	FILE *file = fopen(path.c_str(), "w");
+	fprintf(file, "[");
+	for (auto &i : data) {
+		fprintf(file, "%f,\n", i);
+	}
+	fprintf(file, "];");
+	fclose(file);
+}
+
+
 inline void Write(const std::string& path, const std::vector<double>& data) {
 	auto size = (data.size() > MAX_WRITE_DATA_SIZE) ? MAX_WRITE_DATA_SIZE : data.size();
 	FILE* file = fopen(path.c_str(), "w");
