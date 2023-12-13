@@ -85,6 +85,13 @@ public:
         if (!decode_buffer.empty()) {
             bool if_need_this = false;
             for (size_t i = 3; i < decode_buffer.size(); ++i) {
+                // preamble sync error
+                /////////////////////////////////
+                if (i > 25) {
+                    decode_buffer.clear();
+                    return error;
+                }
+                ////////////////////////////////
                 if (abs(decode_buffer[i]) + abs(decode_buffer[i - 1]) + abs(decode_buffer[i - 2]) + abs(decode_buffer[i - 3]) < zero_detect_threashold) {
                     if_need_this = true;
                     continue;
@@ -114,7 +121,7 @@ public:
             else {
                 size = (NUM_MAC_HEADER_BITS + NUM_PACKET_DATA_BITS) * NUM_SAMPLES_PER_BIT);
             }
-            if (decode_buffer.size() >= (NUM_MAC_HEADER_BITS+ NUM_PACKET_DATA_BITS)  * NUM_SAMPLES_PER_BIT)
+            if (decode_buffer.size() >= (NUM_MAC_HEADER_BITS)  * NUM_SAMPLES_PER_BIT)
             {
 
                 std::vector<int> header_vec;
@@ -152,10 +159,10 @@ public:
                 // data
                 else if (Frame_Type(type) == Frame_Type::data) {
                     // start_position: bit index, remember x4
-                    int start_position = NUM_MAC_HEADER_BITS;
-                    for (int bit_index = start_position; bit_index < start_position + NUM_PACKET_DATA_BITS; ++bit_index) {
-                        symbol_code.emplace_back(decode_a_bit(decode_buffer, bit_index *4));
-                    }
+                    //int start_position = NUM_MAC_HEADER_BITS;
+                    //for (int bit_index = start_position; bit_index < start_position + NUM_PACKET_DATA_BITS; ++bit_index) {
+                    //    symbol_code.emplace_back(decode_a_bit(decode_buffer, bit_index *4));
+                    //}
                     std::cout << "exit after receiving data" << std::endl;
                     Write("decode_log.txt", decode_buffer);
                     decode_buffer=empty;
@@ -340,17 +347,18 @@ public:
                     add_samples_from_a_bit(transmittion_buffer, bit);
                 }                
             }
+            // now no data
             // data
-            if (status == Tx_data) {
-                for (int i = transmitted_packet * data_bits_in_a_packet; i < (transmitted_packet + 1) * data_bits_in_a_packet; ++i) {
-                    add_samples_from_a_bit(transmittion_buffer, (int)bits[i]);
-                }
-            }
-            else if (status == Tx_ack) {
-                for (int i = 0; i < data_bits_in_a_packet; ++i) {
-                    add_samples_from_a_bit(transmittion_buffer, 0);
-                }
-            }
+            //if (status == Tx_data) {
+            //    for (int i = transmitted_packet * data_bits_in_a_packet; i < (transmitted_packet + 1) * data_bits_in_a_packet; ++i) {
+            //        add_samples_from_a_bit(transmittion_buffer, (int)bits[i]);
+            //    }
+            //}
+            //else if (status == Tx_ack) {
+            //    for (int i = 0; i < data_bits_in_a_packet; ++i) {
+            //        add_samples_from_a_bit(transmittion_buffer, 0);
+            //    }
+            //}
         
         return true;
     }
