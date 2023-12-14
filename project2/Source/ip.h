@@ -277,7 +277,7 @@ struct Packet_handler {
             //    set_packet(detected_data, TOTAL_PACKET_LEN);
             //    send_packet(1);
             //}
-            //a = ans;
+            a = ans;
             
        
     }
@@ -351,9 +351,11 @@ static int PrintIPHeader(const u_char* packetData) {
         }
     }
     int ans = -1;
+
     switch (ip_protocol->Protocol) {
     case 1:
-
+        std::cout << ip_protocol->DstAddr << std::endl;
+        
         ans = PrintICMPHeader(packetData);
         return ans;
         break;

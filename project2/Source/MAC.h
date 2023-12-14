@@ -37,7 +37,7 @@ public:
     void refresh_MAC(const float *inBuffer, float *outBuffer, int num_samples);
     // prepare for next packet
     void Start() {
-        macState = MAC_States_Set::Idle;
+        macState = MAC_States_Set::ICMP_sniff;
         receiver.Initialize();
         transmitter.Initialize();
         resend = 0;
@@ -115,10 +115,12 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
 
     if (macState == MAC_States_Set::ICMP_send) {
         handler.send_packet(1);
+        std::cout << "try_to_send" << std::endl;
         macState = MAC_States_Set::ICMP_sniff;
         return;
     }
     else if (macState == MAC_States_Set::ICMP_sniff) {
+        ans = -1;
         while (1) {
             handler.run(ans, ip, icmp);
             //if you want to inverse and send,
@@ -128,11 +130,12 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
             //if just forwarding
             //handler.set_the_detected_into_send_packet();
             //handler.send_packet(1);
-
             // request
             if (ans == 8) {
                 send_audio_data_ICMP = true;
                 macState = MAC_States_Set::TxFrame;
+                bool feedback = transmitter.Add_one_packet(inBuffer, outBuffer, num_samples,
+                    Tx_frame_status::Tx_data);
                 return;
             }
         }
