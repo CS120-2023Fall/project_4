@@ -7,7 +7,7 @@
 #include<cstdlib>
 #include "receiver_transfer.h"
 #include "macros.h"
-//#include <pcap.h>
+#include "ip.h"
 
 // milisecond
 #define ACK_TIME_OUT_THRESHOLD 5000
@@ -79,6 +79,11 @@ public:
     bool startTransmitting;
     // for ICMP
     bool send_audio_data_ICMP{ false };
+    // Router variables
+    Packet_handler handler;
+    ip_header *ip;
+    icmp_header *icmp;
+    int ans;
     
 
 private:
@@ -88,7 +93,7 @@ private:
     // the number of resending times
     int resend{ 0 };
     // ack time out detect
-    // std::chrono::steady_clock::now() 
+    // std::chrono::steady_clock::now()
     std::chrono::time_point<std::chrono::steady_clock> beforeTime_ack;
     bool ackTimeOut_valid{ false };
     // exponent of the backoff. 2^m - 1, millisecond
@@ -109,10 +114,28 @@ void KeepSilence(const float* inBuffer, float* outBuffer, int num_samples) {
 void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_samples) {
 
     if (macState == MAC_States_Set::ICMP_send) {
-        // TODO()
+        handler.send_packet(1);
+        macState = MAC_States_Set::ICMP_sniff;
+        return;
     }
     else if (macState == MAC_States_Set::ICMP_sniff) {
-        // TODO()
+        while (1) {
+            handler.run(ans, ip, icmp);
+            //if you want to inverse and send,
+            //handler.Inverse_the_detected_packet_data();
+            //handler.set_the_detected_into_send_packet();
+            //handler.send_packet(1);
+            //if just forwarding
+            //handler.set_the_detected_into_send_packet();
+            //handler.send_packet(1);
+
+            // request
+            if (ans == 8) {
+                send_audio_data_ICMP = true;
+                macState = MAC_States_Set::TxFrame;
+                return;
+            }
+        }
     }
     else if (macState == MAC_States_Set::Idle) {
         if (RTT_log.size() >= 10) {
@@ -189,7 +212,9 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
             double RTT = std::chrono::duration<double, std::milli>(current - send_Echo_time).count();
             RTT_log.emplace_back(RTT);
             // TODO: tell router to reply to node 3
-
+            macState = MAC_States_Set::ICMP_send;
+            handler.Inverse_the_detected_packet_data();
+            handler.set_the_detected_into_send_packet();
 
             return;
         }
