@@ -8,8 +8,8 @@
       "args": [],
       "stopAtEntry": false,
       "externalConsole": true,
-      "cwd": "d:/cs120/cs120project/Project2/project2/Source",
-      "program": "d:/cs120/cs120project/Project2/project2/Source/build/Debug/outDebug",
+      "cwd": "d:/cs120/Project2/project2/Source",
+      "program": "d:/cs120/Project2/project2/Source/build/Debug/outDebug",
       "MIMode": "gdb",
       "miDebuggerPath": "gdb",
       "setupCommands": [
