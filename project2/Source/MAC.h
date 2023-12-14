@@ -47,6 +47,7 @@ public:
         backoff_exp = 0;
         startTransmitting = START_TRANS_FIRST;
         RTT_log.clear();
+        send_audio_data_ICMP = false;
     }
     
     //void reset_receiving_info();
@@ -74,7 +75,11 @@ public:
     std::deque<int> received_data;
     bool wait = false;
     int start_for_wait_sample=0;
+    // for CSMA
     bool startTransmitting;
+    // for ICMP
+    bool send_audio_data_ICMP{ false };
+    
 
 private:
     int mac_address{ MY_MAC_ADDRESS };
@@ -137,7 +142,9 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
         double duration_milisecond = std::chrono::duration<double, std::milli>(currentTime - beforeTime_backoff).count();
         // +, - first, then <<
         double backoff = (1 << backoff_exp) - 1;
-        if (TxPending && (backoff == 0 || duration_milisecond > backoff)) {
+        //if (TxPending && (backoff == 0 || duration_milisecond > backoff)) 
+        if (send_audio_data_ICMP)
+        {
             backoff_exp = 0;
             macState = MAC_States_Set::CarrierSense;
             return;
@@ -177,10 +184,13 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
             wait = false;
             backoff_exp = rand() % 5 + 4;
 
-            // finish ping
+            // finish ping (Task 1)
             std::chrono::steady_clock::time_point current = std::chrono::steady_clock::now();
             double RTT = std::chrono::duration<double, std::milli>(current - send_Echo_time).count();
             RTT_log.emplace_back(RTT);
+            // TODO: tell router to reply to node 3
+
+
             return;
         }
             case Rx_Frame_Received_Type::valid_data:
@@ -256,6 +266,8 @@ void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_sam
         }
         // set start time stamp
         send_Echo_time = std::chrono::steady_clock::now();
+        // ICMP Echo packet sending is finished.
+        send_audio_data_ICMP = false;
     }
     /// ACKTimeout
     else if (macState == MAC_States_Set::ACKTimeout) {
