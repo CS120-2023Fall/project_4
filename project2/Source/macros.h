@@ -12,7 +12,7 @@
 #define NUM_DEST_BITS 3
 #define NUM_SRC_BITS 3
 #define NUM_TYPE_BITS 2
-#define NUM_PACKET_DATA_BITS 10000
+#define NUM_PACKET_DATA_BITS 5000
 // packet index length
 #define PACKET_NUM_BITS 8
 // how many samples represent a bit
@@ -27,7 +27,7 @@
 #define RECORD_IN_LIVE false
 // We do not have to start the two computers simultaneously. The macro decides whether this
 // computer start transmitting first.
-#define START_TRANS_FIRST false
+#define START_TRANS_FIRST true
 // only receive data and reply ack
 #define ONLY_CSMA_RECEIVE true
 
