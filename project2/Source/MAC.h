@@ -64,7 +64,9 @@ public:
         TxACK,
         ACKTimeout,
         LinkError,
-        debug_error
+        debug_error,
+        ICMP_sniff,
+        ICMP_send
     };
 
     MAC_States_Set macState{MAC_States_Set::Idle};
@@ -101,7 +103,13 @@ void KeepSilence(const float* inBuffer, float* outBuffer, int num_samples) {
 }
 void MAC_Layer::refresh_MAC(const float *inBuffer, float *outBuffer, int num_samples) {
 
-    if (macState == MAC_States_Set::Idle) {
+    if (macState == MAC_States_Set::ICMP_send) {
+        // TODO()
+    }
+    else if (macState == MAC_States_Set::ICMP_sniff) {
+        // TODO()
+    }
+    else if (macState == MAC_States_Set::Idle) {
         if (RTT_log.size() >= 10) {
             Write("RTT_log.txt", RTT_log);
             macState = MAC_States_Set::LinkError;
