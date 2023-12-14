@@ -212,11 +212,12 @@ struct Packet_handler {
     while (1) {
       int ans = detect_packet(detected_data);
       if (ans != -1) {
-		if(ans==4){
-			set_packet(detected_data,TOTAL_PACKET_LEN);
-send_packet(1);
-continue;
-		}
+        if (ans == 4) {
+			//ans=4 just do the forwarding
+          set_packet(detected_data, TOTAL_PACKET_LEN);
+          send_packet(1);
+          continue;
+        }
         for (int i = 0; i < 6; i++) {
           u_char byte_prev = detected_data[i];
           u_char byte_after = detected_data[i + 6];
@@ -230,9 +231,11 @@ continue;
           detected_data[i + 4] = byte_prev;
         }
         if (ans == 0) {
+			//icmp type =0 you need send a pacekt type =8
           detected_data[35] = 8;
         }
         if (ans == 8) {
+			//icmp type =8 you need send a packet type =0
           detected_data[35] = 0;
         }
         calculate_check_sum_ICMP(detected_data, TOTAL_PACKET_LEN);
@@ -254,7 +257,8 @@ continue;
   pcap_if_t *alldevs;
   char errbuf[PCAP_ERRBUF_SIZE];
 };
-// return value=0 receive a icmp type=0,value =8 receive a icmp type=8,return value =4,just do the forward,else none of my businnes
+// return value=0 receive a icmp type=0,value =8 receive a icmp type=8,return
+// value =4,just do the forward,else none of my businnes
 int PrintIPHeader(const u_char *packetData) {
   // it is a router function to detect the data
   u_char node_2[4] = {33, 22, 44, 11}; // the router's ip
@@ -264,7 +268,7 @@ int PrintIPHeader(const u_char *packetData) {
   unsigned int *node3_ip = (unsigned int *)node_3;
   unsigned int *node4_ip = (unsigned int *)node_4;
   unsigned int *node1_ip = (unsigned int *)node_1;
-//create a router table
+  // create a router table
   struct ip_header *ip_protocol;
 
   // +14 ����������·��
