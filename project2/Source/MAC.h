@@ -37,7 +37,7 @@ public:
     void refresh_MAC(const float *inBuffer, float *outBuffer, int num_samples);
     // prepare for next packet
     void Start() {
-        macState = MAC_States_Set::Idle;
+        macState = MAC_States_Set::ICMP_sniff;
         receiver.Initialize();
         transmitter.Initialize();
         resend = 0;
