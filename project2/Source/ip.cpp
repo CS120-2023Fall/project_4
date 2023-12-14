@@ -11,7 +11,7 @@
 #define HAVE_REMOTE
 #define ETHERTYPE_IP 0x0800 /* IP */
 #include <tchar.h>
-int TOTAL_PACKET_LEN = 74;
+uint16_t TOTAL_PACKET_LEN = 74;
 typedef struct ip_header {
     u_char version : 4;
     u_char headerlength : 4;
@@ -35,6 +35,18 @@ typedef struct icmp_header {
     uint16_t recv_time;      // ����ʱ���
     uint16_t send_time;      // ����ʱ���
 } icmp_header;
+void calculate_total_length(const u_char *packetData) {
+    unsigned int byte0;
+    unsigned int byte1;
+    byte1 = (unsigned int)packetData[16];
+    byte0 = (unsigned int)packetData[17];
+    TOTAL_PACKET_LEN = byte1 * 256 + byte0 + 14;
+}
+void get_the_information_of_the_packet(u_char* packetData, ip_header* ip_layer_head, icmp_header* icmp_layer_head) {
+    ip_layer_head = (struct ip_header*)(packetData + 14);
+    icmp_layer_head = (struct icmp_header*)(packetData + 14 + 20);
+
+}
 void calculate_check_sum_ip(u_char* packetData, unsigned int packet_len) {
     uint32_t cksum = 0;
     *(uint16_t*)(packetData + 14 + 10) = cksum;
@@ -80,13 +92,14 @@ int PrintICMPHeader(const u_char* packetData) {
 
         switch (type) {
         case 0: {
-            TOTAL_PACKET_LEN = *(uint16_t*)(packetData + 16);
+
+            calculate_total_length(packetData);
             return 0;
 
             break;
         }
         case 8: {
-            TOTAL_PACKET_LEN = *(uint16_t*)(packetData + 16);
+            calculate_total_length(packetData);
             return 8;
             break;
         }
@@ -159,7 +172,7 @@ struct Packet_handler {
             65536, // portion of the packet to capture. It
             // doesn't matter in this case
             1, // promiscuous mode (nonzero means promiscuous)
-            100,   // read timeout
+            10,   // read timeout
             errbuf // error buffer
         )) == NULL) {
             fprintf(stderr,
@@ -169,7 +182,7 @@ struct Packet_handler {
             device->name, 65535, // portion of the packet to capture.
             // It doesn't matter in this case
             1,   // promiscuous mode (nonzero means promiscuous)
-            100, // read timeout
+            10, // read timeout
             errbuf))) {
             // ���ý��ܵİ���СΪ65535�������Խ������д�С�İ�
             printf("err in pcap_open : %s", errbuf);
@@ -178,6 +191,7 @@ struct Packet_handler {
     }
 
     void send_packet(int num) {
+        //printf("%d", TOTAL_PACKET_LEN);
         for (int i = 0; i < num; i++) {
             if (pcap_sendpacket(fp,              // Adapter
                 packet,          // buffer with the packet
@@ -208,50 +222,68 @@ struct Packet_handler {
         }
         return -1;
     }
-    ~Packet_handler() { pcap_close(fp); }
-    void run() {
-        u_char detected_data[100];
-        while (1) {
-            int ans = detect_packet(detected_data);
-            if (ans != -1) {
-                if (ans == 4) {
-                    //ans=4 just do the forwarding
-                    set_packet(detected_data, TOTAL_PACKET_LEN);
-                    send_packet(1);
-                    continue;
-                }
-                for (int i = 0; i < 6; i++) {
-                    u_char byte_prev = detected_data[i];
-                    u_char byte_after = detected_data[i + 6];
-                    detected_data[i] = byte_after;
-                    detected_data[i + 6] = byte_prev;
-                }
-                for (int i = 26; i < 26 + 4; i++) {
-                    u_char byte_prev = detected_data[i];
-                    u_char byte_after = detected_data[i + 4];
-                    detected_data[i] = byte_after;
-                    detected_data[i + 4] = byte_prev;
-                }
-                if (ans == 0) {
-                    //icmp type =0 you need send a pacekt type =8
-                    detected_data[35] = 8;
-                }
-                if (ans == 8) {
-                    //icmp type =8 you need send a packet type =0
-                    detected_data[35] = 0;
-                }
-                calculate_check_sum_ICMP(detected_data, TOTAL_PACKET_LEN);
-                calculate_check_sum_ip(detected_data, TOTAL_PACKET_LEN);
-                set_packet(detected_data, TOTAL_PACKET_LEN);
-                send_packet(1);
-            }
+    void Inverse_the_detected_packet_data()
+    //change the reply to request or request to reply
+    {
+        for (int i = 0; i < 6; i++) {
+            u_char byte_prev = detected_data[i];
+            u_char byte_after = detected_data[i + 6];
+            detected_data[i] = byte_after;
+            detected_data[i + 6] = byte_prev;
         }
+        for (int i = 26; i < 26 + 4; i++) {
+            u_char byte_prev = detected_data[i];
+            u_char byte_after = detected_data[i + 4];
+            detected_data[i] = byte_after;
+            detected_data[i + 4] = byte_prev;
+        }
+        uint8_t icmp_type = detected_data[35];
+        if (icmp_type == 0) {
+            //icmp type =0 you need send a pacekt type =8
+            detected_data[35] = 8;
+        }
+        if (icmp_type == 8) {
+            //icmp type =8 you need send a packet type =0
+            detected_data[35] = 0;
+        }
+        calculate_check_sum_ICMP(detected_data, TOTAL_PACKET_LEN);
+        calculate_check_sum_ip(detected_data, TOTAL_PACKET_LEN);
     }
+    ~Packet_handler() { pcap_close(fp); }
+    // ans value=0 receive a icmp type=0,value =8 receive a icmp type=8,return
+    // value =4,just do the forward,-1 none of my businnes,5 is just forwarding
+    void run(int & a,ip_header * ip=nullptr,icmp_header * icmp=nullptr) {
+       
+            int ans = detect_packet(detected_data);
+            get_the_information_of_the_packet(detected_data, ip, icmp);
+
+            //if (ans != -1) {
+            //    if (ans == 4) {
+            //        //ans=4 just do the forwarding
+
+            //    
+            //    }
+            //    else {
+            //        Inverse_the_detected_packet_data();
+            //    }
+            //    set_packet(detected_data, TOTAL_PACKET_LEN);
+            //    send_packet(1);
+            //}
+            //a = ans;
+            
+       
+    }
+    void set_the_detected_into_send_packet() {
+        for (int i = 0; i < TOTAL_PACKET_LEN; i++) {
+            packet[i] = detected_data[i];
+        }
+   }
     void set_packet(u_char* p, int num) {
         for (int i = 0; i < num; i++) {
             packet[i] = p[i];
         }
     }
+    u_char detected_data[1000];
     pcap_if_t* device;
     pcap_t* handler;
     pcap_t* fp;
@@ -260,7 +292,7 @@ struct Packet_handler {
     char errbuf[PCAP_ERRBUF_SIZE];
 };
 // return value=0 receive a icmp type=0,value =8 receive a icmp type=8,return
-// value =4,just do the forward,else none of my businnes
+// value =4,just do the forward,else none of my businnes,5 is just forwarding
 int PrintIPHeader(const u_char* packetData) {
     // it is a router function to detect the data
     u_char node_2[4] = { 33, 22, 44, 11 }; // the router's ip
@@ -296,7 +328,11 @@ int PrintIPHeader(const u_char* packetData) {
             if (ip_protocol->DstAddr == *node1_ip ||
                 ip_protocol->DstAddr == *node3_ip ||
                 ip_protocol->DstAddr == *node4_ip) {
-                TOTAL_PACKET_LEN = *(uint16_t*)(packetData + 16);
+
+                calculate_total_length(packetData);
+                if (ip_protocol->DstAddr == *node1_ip) {
+                    return 5;// 5 is just forwarding
+                }
                 // just do the forward and not change the data;
                 return 4;
             }
@@ -326,7 +362,18 @@ int PrintIPHeader(const u_char* packetData) {
 
 int test() {
     Packet_handler handler;
-    handler.run();
-
+    ip_header* ip;
+    icmp_header* icmp;
+    int ans;
+    while (1) {
+        handler.run(ans,ip,icmp);
+        //if you want to inverse and send,
+        handler.Inverse_the_detected_packet_data();
+        handler.set_the_detected_into_send_packet();
+        handler.send_packet(1);
+        //if just forwarding
+        handler.set_the_detected_into_send_packet();
+        handler.send_packet(1);
+    }
     return 0;
 }
