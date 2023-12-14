@@ -20,8 +20,8 @@
 
 #define NUM_MAC_HEADER_BITS (NUM_DEST_BITS + NUM_SRC_BITS + NUM_TYPE_BITS + PACKET_NUM_BITS)
 
-#define MY_MAC_ADDRESS 0b001
-#define OTHER_MAC_ADDRESS 0b010
+#define MY_MAC_ADDRESS 0b010
+#define OTHER_MAC_ADDRESS 0b001
 
 // record real time inBuffer. Stop in time. Otherwise, the vector bombs.
 #define RECORD_IN_LIVE false
@@ -29,7 +29,7 @@
 // computer start transmitting first.
 #define START_TRANS_FIRST false
 // only receive data and reply ack
-#define ONLY_CSMA_RECEIVE false
+#define ONLY_CSMA_RECEIVE true
 
 #define IS_ROUTER true
 #define MY_IP 0x111
