@@ -87,10 +87,10 @@ public:
             for (size_t i = 3; i < decode_buffer.size(); ++i) {
                 // preamble sync error
                 /////////////////////////////////
-                if (i > 25) {
-                    decode_buffer.clear();
-                    return error;
-                }
+                //if (i > 15) {
+                //    decode_buffer.clear();
+                //    return error;
+                //}
                 ////////////////////////////////
                 if (abs(decode_buffer[i]) + abs(decode_buffer[i - 1]) + abs(decode_buffer[i - 2]) + abs(decode_buffer[i - 3]) < zero_detect_threashold) {
                     if_need_this = true;

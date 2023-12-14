@@ -133,7 +133,7 @@ public:
 
 
         // transmit and receive button
-        T_and_R_Button.setButtonText("transmit and receive");
+        T_and_R_Button.setButtonText("ping Node 2");
         T_and_R_Button.setSize(110, 40);
         T_and_R_Button.setCentrePosition(220, 200);
         T_and_R_Button.onClick = [this] {juceState = juce_States_Set::T_AND_R; mac.Start();
