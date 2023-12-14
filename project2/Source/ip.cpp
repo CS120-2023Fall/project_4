@@ -215,6 +215,7 @@ struct Packet_handler {
 		if(ans==4){
 			set_packet(detected_data,TOTAL_PACKET_LEN);
 send_packet(1);
+continue;
 		}
         for (int i = 0; i < 6; i++) {
           u_char byte_prev = detected_data[i];
