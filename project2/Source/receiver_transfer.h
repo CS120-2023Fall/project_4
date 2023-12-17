@@ -319,11 +319,11 @@ public:
         // 50000 / bits_in_a_packet is the number of packet
         // 1 ÊÇ´Ó1 µ½-1
         // 0 ÊÇ´Ó-1 µ½ 1
-        // 4 ¸ö sample ±íÊ¾1 bit
-        if (status == Tx_data) {
-            if (transmitted_packet >= maximum_packet)
-                return false;
-        }
+        //// 4 ¸ö sample ±íÊ¾1 bit
+        //if (status == Tx_data) {
+        //    if (transmitted_packet >= maximum_packet)
+        //        return false;
+        //}
             // add preamble
             for (int i = 0; i < PREAMBLE_SIZE; ++i) {
                 transmittion_buffer.emplace_back(preamble[i]);
@@ -379,10 +379,6 @@ public:
                     outBuffer[i] = transmittion_buffer[transfer_num];
                     transfer_num++;
                 }
-            }
-            if (transfer_num >= transmittion_buffer.size()) {
-                transfer_num = 0;
-                transmittion_buffer.clear();
             }
             return silence;
     }

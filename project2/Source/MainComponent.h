@@ -160,6 +160,17 @@ public:
             record_max = 0;
         };
         addAndMakeVisible(recordButton);
+        ping_WAN_Button.setButtonText("PING_THE_WAN");
+        ping_WAN_Button.setSize(110, 40);
+        ping_WAN_Button.setCentrePosition(550, 200);
+        ping_WAN_Button.onClick = [this] {
+            juceState = juce_States_Set::T_AND_R;
+            mac.Start();
+            mac.macState = MAC_Layer::MAC_States_Set::ICMP_ping_wan;
+            mac.sequence_num = 15;
+            record_max = 0;
+        };
+        addAndMakeVisible(ping_WAN_Button);
         //csmaButton.setButtonText("csma_with_jam");
         //csmaButton.setSize(110, 40);
         //csmaButton.setCentrePosition(440, 200);
@@ -284,7 +295,8 @@ public:
 private:
     juce::Label mes;
     juce::Random random;
-    juce::TextButton playButton, stopButton, recordButton, recordWithPredefinedButton, openButton, testButton, transmitButton, transmit_with_wireButton, receiverButton, receiver_with_wireButton;
+    juce::TextButton playButton, stopButton, recordButton, recordWithPredefinedButton, openButton, testButton, transmitButton, transmit_with_wireButton, receiverButton
+        , receiver_with_wireButton,ping_WAN_Button;
     juce::TextButton csmaButton,csmaWithJamButton;
     juce::AudioFormatManager formatManager;
     float record_max=0;
@@ -293,6 +305,7 @@ private:
         T_AND_R,
         TEST,
         RECORD,
+       
     };
     juce::TextButton T_and_R_Button;
     // state of the outer program
