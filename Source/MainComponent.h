@@ -146,23 +146,25 @@ public:
 
 
         // transmit and receive button
-        csmaWithJamButton.setButtonText("csma_task");
-        csmaWithJamButton.setSize(110, 40);
-        csmaWithJamButton.setCentrePosition(330, 200);
-        csmaWithJamButton.onClick = [this] {start_csma = true; juceState = juce_States_Set::T_AND_R ; mac.Start();
-        mes0.setText("csma_task", juce::NotificationType::dontSendNotification); };
-        addAndMakeVisible(csmaWithJamButton);
+        //csmaWithJamButton.setButtonText("csma_task");
+        //csmaWithJamButton.setSize(110, 40);
+        //csmaWithJamButton.setCentrePosition(330, 200);
+        //csmaWithJamButton.onClick = [this] {start_csma = true; juceState = juce_States_Set::T_AND_R ; mac.Start();
+        //mes0.setText("csma_task", juce::NotificationType::dontSendNotification); };
+        //addAndMakeVisible(csmaWithJamButton);
+
         recordButton.setButtonText("reflect_the_sound");
-        recordButton.setSize(110, 40);
-        recordButton.setCentrePosition(440, 200);
+        recordButton.setSize(130, 40);
+        recordButton.setCentrePosition(350, 200);
         recordButton.onClick = [this] {
             juceState = juce_States_Set::RECORD;
             record_max = 0;
         };
         addAndMakeVisible(recordButton);
+
         ping_WAN_Button.setButtonText("PING_THE_WAN");
-        ping_WAN_Button.setSize(110, 40);
-        ping_WAN_Button.setCentrePosition(550, 200);
+        ping_WAN_Button.setSize(150, 40);
+        ping_WAN_Button.setCentrePosition(500, 200);
         ping_WAN_Button.onClick = [this] {
             juceState = juce_States_Set::T_AND_R;
             mac.Start();
@@ -171,13 +173,8 @@ public:
             record_max = 0;
         };
         addAndMakeVisible(ping_WAN_Button);
-        //csmaButton.setButtonText("csma_with_jam");
-        //csmaButton.setSize(110, 40);
-        //csmaButton.setCentrePosition(440, 200);
-        //csmaButton.onClick = [this] {start_csma = true;
-        //mes0.setText("csma_with_jam_task", juce::NotificationType::dontSendNotification); };
-        //addAndMakeVisible(csmaButton);
-        // 
+
+
         // message
         mes0.setText("project2", juce::NotificationType::dontSendNotification);
         mes0.setSize(400, 40);
@@ -239,19 +236,10 @@ public:
             KeepSilence( inBuffer, outBuffer,  num_samples);
             if (juceState == juce_States_Set::T_AND_R) {
                 mac.TxPending = false;
-                if (mac.startTransmitting && mac.transmitter.transmitted_packet * NUM_PACKET_DATA_BITS  < 50000) {
+                if (mac.startTransmitting && mac.transmitter.transmitted_packet * NUM_PACKET_DATA_BITS  < 50000 && !mac.wait) {
                     mac.TxPending = true;
                 }
-                if (mac.wait) {
-                    mac.TxPending = false;
-                }
-                ///////////////////////  ////////////////////
-                if (ONLY_CSMA_RECEIVE) {
-                    mac.TxPending = false;
-                }
-                // //////////////////////////////////////////////
-                
-               
+
                 // Record the inBuffer. Watch out memory overflow.
                 if (RECORD_IN_LIVE)
                 for (int i = 0; i < num_samples; ++i) {
@@ -266,25 +254,24 @@ public:
                 }
             }
             else if (juceState == juce_States_Set::TEST) {
+                double pi = juce::MathConstants<double>::pi;
                 for (int i = 0; i < num_samples; ++i) {
-                    outBuffer[i] = std::sin(2 * pi * 100 * i/48000);
+                    outBuffer[i] = (float)std::sin(2 * pi * 100 * i/48000);
                 }
                 return;
             }
             else if (juceState == juce_States_Set::RECORD) {
-                
+                record_max = 0;
                 for (int i = 0; i < num_samples; ++i) {
-                    record_max =record_max>abs(inBuffer[i])?record_max:abs(inBuffer[i]);
-
-
+                    record_max = record_max > abs(inBuffer[i]) ? record_max : abs(inBuffer[i]);
                 }
-                mes0.setText("the record_max is :" + std::to_string(record_max),juce::dontSendNotification);
+                mes0.setText("the record_max is :" + std::to_string(record_max), juce::dontSendNotification);
             }
             if (mac.macState == MAC_Layer::MAC_States_Set::LinkError) {
                 std::cout << "received: " << mac.receiver.received_packet << std::endl;
                 std::cout << "transitted: " << mac.transmitter.transmitted_packet << std::endl;
                 stopButton.triggerClick();
-            }   
+            }
 
             break;
         }
@@ -297,7 +284,6 @@ private:
     juce::Random random;
     juce::TextButton playButton, stopButton, recordButton, recordWithPredefinedButton, openButton, testButton, transmitButton, transmit_with_wireButton, receiverButton
         , receiver_with_wireButton,ping_WAN_Button;
-    juce::TextButton csmButton,csmaWithJamButton;
     juce::TextButton DNS_Button;
     
         juce::AudioFormatManager formatManager;
@@ -307,7 +293,6 @@ private:
         T_AND_R,
         TEST,
         RECORD,
-       
     };
     juce::TextButton T_and_R_Button;
     // state of the outer program

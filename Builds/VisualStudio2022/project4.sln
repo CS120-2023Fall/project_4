@@ -2,7 +2,7 @@
 Microsoft Visual Studio Solution File, Format Version 11.00
 # Visual Studio Version 17
 
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "project2 - App", "project2_App.vcxproj", "{2765D42D-64C7-668C-FFD3-D3F4045C4E7E}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "project4 - App", "project4_App.vcxproj", "{2765D42D-64C7-668C-FFD3-D3F4045C4E7E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

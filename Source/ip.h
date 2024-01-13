@@ -1,9 +1,9 @@
 #include <pcap.h>
 #include <stdio.h>
 
-#define WIN32
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
-#pragma warning(disable : 4995)
+//#define WIN32
+//#define _WINSOCK_DEPRECATED_NO_WARNINGS
+//#pragma warning(disable : 4995)
 #pragma comment(lib, "wpcap.lib")
 #pragma comment(lib, "ws2_32.lib")
 // reference https://cloud.tencent.com/developer/article/2351541
