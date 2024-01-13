@@ -166,7 +166,7 @@ public:
         ping_WAN_Button.onClick = [this] {
             juceState = juce_States_Set::T_AND_R;
             mac.Start();
-            mac.macState = MAC_Layer::MAC_States_Set::ICMP_ping_wan;
+            mac.macState = MAC_Layer::MAC_States_Set::ICMP_sniff;
             mac.sequence_num = 15;
             record_max = 0;
         };
@@ -297,8 +297,10 @@ private:
     juce::Random random;
     juce::TextButton playButton, stopButton, recordButton, recordWithPredefinedButton, openButton, testButton, transmitButton, transmit_with_wireButton, receiverButton
         , receiver_with_wireButton,ping_WAN_Button;
-    juce::TextButton csmaButton,csmaWithJamButton;
-    juce::AudioFormatManager formatManager;
+    juce::TextButton csmButton,csmaWithJamButton;
+    juce::TextButton DNS_Button;
+    
+        juce::AudioFormatManager formatManager;
     float record_max=0;
     enum class juce_States_Set {
         STOP,

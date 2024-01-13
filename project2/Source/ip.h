@@ -143,7 +143,7 @@ struct Packet_handler
         for (auto d = alldevs; d != NULL; d = d->next) {
             printf("%s %s\n", d->name, d->description);
             count++;
-            if (count == 6) {
+            if (count == 7) {
                 device = d;
                 break;
             }
@@ -194,7 +194,7 @@ struct Packet_handler
         }
         char s[] = "\\Device\\NPF_{200730C5-504B-4B79-ABAB-2BF3BAFC5184}";//THE LOCAL
         char wifi[] = "\\Device\\NPF_{5C4EECF3-7BFC-499E-B5B1-AAF9682D5C83}";
-        if ((fp = pcap_open_live(wifi, // name of the device
+        if ((fp = pcap_open_live(s, // name of the device
             65536, // portion of the packet to capture. It
             // doesn't matter in this case
             1, // promiscuous mode (nonzero means promiscuous)
@@ -205,7 +205,7 @@ struct Packet_handler
                 "\nUnable to open the adapter. %s is not supported by WinPcap\n");
         }
         if (NULL == (handler = pcap_open_live(
-            wifi, 65536, // portion of the packet to capture.
+            s, 65536, // portion of the packet to capture.
             // It doesn't matter in this case
             1,   // promiscuous mode (nonzero means promiscuous)
             100, // read timeout
