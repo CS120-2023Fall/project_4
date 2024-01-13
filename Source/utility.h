@@ -36,8 +36,7 @@ inline std::vector<bool> Read_bits(const std::string& path)//read_bits_from file
 	}
 	return bits;
 }
-
-inline std::vector<bool> Read_bits_from_bin(const std::string &path) {
+inline std::vector<bool> Read_bits_from_bin(const std::string& path) {
 	std::ifstream f(path.c_str(), std::ios::binary | std::ios::in);
 	std::ofstream o("INPUT_bin.txt", std::ios::out);
 	std::string line;
@@ -69,13 +68,11 @@ inline void Tranlate_from_A_bin_To_B_Bin(const std::string& path, const std::str
 		o << (char)c;
 	}
 }
-
 inline void Write_bin(std::vector<bool>bits,const std::string& path) {
 	std::ofstream o(path.c_str(), std::ios::binary| std::ios::out);
 	o.write((const char*)&(bits[0]), bits.size()/8);
 	o.close();
 }
-
 //inline std::vector<bool> from_symbols_to_bits(const std::vector<unsigned int >symbols, int seperation_num) {
 //	std::vector<bool>bits;
 //	int size = symbols.size();
@@ -88,7 +85,8 @@ inline void Write_bin(std::vector<bool>bits,const std::string& path) {
 //	return bits;
 //}
 
-//write to a format matlab can read
+
+// //write to a format matlab can read
 inline void Write(const std::string& path, const std::vector<float>& data) {
 	auto size = (data.size() > MAX_WRITE_DATA_SIZE) ? MAX_WRITE_DATA_SIZE : data.size();
 	FILE* file = fopen(path.c_str(), "w");
@@ -108,6 +106,8 @@ inline void Write(const std::string& path, const std::vector<double>& data, std:
 	fprintf(file, "%s=[", name.c_str());
 	for (int i = 0; i < size; i++) {
 		fprintf(file, "%f,", data[i]);
+
+
 	}
 	fprintf(file, "];");
 	fclose(file);
@@ -135,12 +135,13 @@ inline void Write(const std::string& path, const std::vector<double>& data) {
 	fprintf(file, "]");
 	fclose(file);
 }
-
 inline void Write(const std::string& path, const std::vector<bool>& data) {
 	auto size = (data.size() > MAX_WRITE_DATA_SIZE) ? MAX_WRITE_DATA_SIZE : data.size();
 	FILE* file = fopen(path.c_str(), "w");
 	for (int i = 0; i < data.size(); i++) {
 		fprintf(file, "%d", data[i]);
+
+
 	}
 	fclose(file);
 }
@@ -152,7 +153,6 @@ inline void Write(const std::string& path, const std::vector<int>& data) {
 	}
 	fclose(file);
 }
-
 inline void Write(const std::string &path, const std::deque<int> &data) {
 	auto size = (data.size() > MAX_WRITE_DATA_SIZE) ? MAX_WRITE_DATA_SIZE : data.size();
 	FILE *file = fopen(path.c_str(), "w");
@@ -161,7 +161,6 @@ inline void Write(const std::string &path, const std::deque<int> &data) {
 	}
 	fclose(file);
 }
-
 inline void Write(const std::string& path, float* data, unsigned int size) {
 	FILE* file = fopen(path.c_str(), "w");
 	fprintf(file, "[");
@@ -252,7 +251,7 @@ inline void Write(const std::string& path, float* data, unsigned int size) {
 //	return bits;
 //}
 //try to return a vector size of size,filled with high 0
-//
+
 //template<typename T>
 //std::vector<T> connect(const std::vector<T>& A, const std::vector<T>& B) {//connect two vector
 //	std::vector<T> data;
@@ -265,7 +264,7 @@ inline void Write(const std::string& path, float* data, unsigned int size) {
 //
 //	return data;
 //}
-//// insert B to A at start_index[0,start_index) B,[start_index,A[A.size()-1]]
+// insert B to A at start_index[0,start_index) B,[start_index,A[A.size()-1]]
 //template<typename T>
 //std::vector<T>insert(const std::vector<T>& A, const std::vector<T>& B, int start_index) {
 //	std::vector<T>data;
@@ -326,7 +325,7 @@ inline void Write(const std::string& path, float* data, unsigned int size) {
 //	return data;
 //
 //}
-////convert the vector
+//convert the vector
 //template<typename T>
 //T* from_vector_to_pointer(const std::vector<T>& data) {
 //	T* new_data = new T[data.size()];
@@ -344,7 +343,7 @@ inline void Write(const std::string& path, float* data, unsigned int size) {
 //	}
 //	return new_data;
 //}
-////the same as matlab do
+//the same as matlab do
 //float sum(const std::vector<float>& data) {
 //	float sum = 0;
 //	for (int i = 0; i < data.size(); i++) {
@@ -391,35 +390,7 @@ inline void Write(const std::string& path, float* data, unsigned int size) {
 //	}
 //	return smoothed;
 //}
-//template<typename T1, typename T2>
-//double calculateCorrelationShip(const std::deque<T1>& data1, const std::vector<T2>& data2, int start_index_of_data1, int start_index_of_data2, int num) {
-//	//first calculate E(data1) and E(data2)
-//	double data1_mean, data2_mean;
-//	double sum_of_data_1 = 0, sum_of_data_2 = 0;
-//	for (int i = 0; i < num; i++) {
-//		int index_data1 = start_index_of_data1 + i;
-//		int index_data2 = start_index_of_data2 + i;
-//		sum_of_data_1 += data1[index_data1];
-//		sum_of_data_2 += data2[index_data2];
-//
-//	}
-//	data1_mean = sum_of_data_1 / num;
-//	data2_mean = sum_of_data_2 / num;
-//	double sigma_data1 = 0, sigma_data2 = 0;
-//	double cov_data1_data2 = 0;
-//	for (int i = 0; i < num; i++) {
-//		int index_data1 = start_index_of_data1 + i;
-//		int index_data2 = start_index_of_data2 + i;
-//		sigma_data1 += (data1[index_data1] - data1_mean) * (data1[index_data1] - data1_mean);
-//		sigma_data2 += (data2[index_data1] - data2_mean) * (data2[index_data2] - data2_mean);
-//		cov_data1_data2 += (data1[index_data1] - data1_mean) * (data2[index_data2] - data2_mean);
-//
-//	}
-//	double ans = (cov_data1_data2) / (std::sqrt(sigma_data1) * std::sqrt(sigma_data2));
-//
-//	return ans;
-//
-//}
+
 //template<typename T1, typename T2>
 //double calculateCorrelationShip(const std::vector<T1>& data1, const std::vector<T2>& data2, int start_index_of_data1, int start_index_of_data2, int num) {
 //	//first calculate E(data1) and E(data2)

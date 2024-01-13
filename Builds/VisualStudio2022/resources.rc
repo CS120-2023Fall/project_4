@@ -15,9 +15,9 @@ BEGIN
   BEGIN
     BLOCK "040904E4"
     BEGIN
-      VALUE "FileDescription",  "project4\0"
+      VALUE "FileDescription",  "project2\0"
       VALUE "FileVersion",  "1.0.0\0"
-      VALUE "ProductName",  "project4\0"
+      VALUE "ProductName",  "project2\0"
       VALUE "ProductVersion",  "1.0.0\0"
     END
   END

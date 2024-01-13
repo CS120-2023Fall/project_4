@@ -82,13 +82,13 @@ public:
             return 1;
         }
     }
-    // inBuffer: input ,outBuffer: not used ,num_samples: sample from input
-    // try to read the num_samples sample from inBuffer,if the accumulated buffer still cannot achieve a packet,return still_receiving,if it satisfies a packet samples
-    // return whether it is valid_ack,valid_data,or error,if valid_data,push the translated data symbols into symbol_code
-    //-1  CRC_ERROR, 
-    // 0 still RX_frame--still decoding,
-    // 1 VALID_ACK,
-    // 2 VALID_DATA
+        // inBuffer: input ,outBuffer: not used ,num_samples: sample from input
+        // try to read the num_samples sample from inBuffer,if the accumulated buffer still cannot achieve a packet,return still_receiving,if it satisfies a packet samples
+        // return whether it is valid_ack,valid_data,or error,if valid_data,push the translated data symbols into symbol_code
+        //-1  CRC_ERROR, 
+        // 0 still RX_frame--still decoding,
+        // 1 VALID_ACK,
+        // 2 VALID_DATA
     Rx_Frame_Received_Type decode_one_packet(const float *inBuffer, float *outBuffer, int num_samples, int transmitted_packet = 0) {
         for (int i = 0; i < num_samples; i++) {
             decode_buffer.push_back(inBuffer[i]);
@@ -143,7 +143,7 @@ public:
                         return error;
                     }
                     header_processed = true;
-
+                    
                 }
             }
             // decode data and crc
@@ -162,7 +162,7 @@ public:
                     //received_bits.emplace_back(decode_a_bit(decode_buffer, bit_index * 4));
                 }
                 // decode crc
-                for (int bit_index = start_position + NUM_PACKET_DATA_BITS, i = 0;
+                for (int bit_index = start_position + NUM_PACKET_DATA_BITS, i = 0; 
                     bit_index < start_position + NUM_PACKET_DATA_BITS + NUM_CRC_BITS_PER_PACKET; ++bit_index, ++i) {
                     check_crc_bits[i] = decode_a_bit(decode_buffer, bit_index * 4);
                 }
@@ -186,7 +186,7 @@ public:
                 int received_crc_read_count = 0;  // a reader for check_crc_bits[], the received crc part.
                 // check first 504* 9 = 4536 bits
                 char tmp_byte = 0;
-                for (int tmp_bits_group_start = 0; tmp_bits_group_start + 504 < NUM_PACKET_DATA_BITS && crc_correct;
+                for (int tmp_bits_group_start = 0; tmp_bits_group_start + 504 < NUM_PACKET_DATA_BITS && crc_correct; 
                     tmp_bits_group_start += 504) {
                     for (int i = 0; i < 504; ++i) {
                         tmp_byte = (tmp_byte << 1) + (char)received_bits_tmp[i + tmp_bits_group_start];
@@ -250,11 +250,11 @@ public:
         return still_receiving;
 
     }
-
+    
     /// outBuffer is not used,inBuffer is the input ,read num_samples sample from input
     bool detect_frame(const float *inBuffer, float *outBuffer, int num_samples) {
         bool detected = false;
-
+    
         int sync_buffer_size = sync_buffer.size();
         for (int i = 0; i < num_samples; ++i) {
             sync_buffer.pop_front();
@@ -288,7 +288,7 @@ public:
                 break;
             }
         }
-
+        
         return detected;
     }
 
@@ -369,7 +369,7 @@ public:
 
     /// inBuffer ,outBuffer and num_samples is not used,status indicate ack or data you want to add,it will add to the transmittion_buffer 
     /// The return value is not used.
-    bool Add_one_packet(const float *inBuffer, float *outBuffer, int num_samples, Tx_frame_status status,
+    bool Add_one_packet(const float *inBuffer, float *outBuffer, int num_samples, Tx_frame_status status, 
         unsigned int received_packet = 1, int repeated_packet_num = -1) {
         // set these constants properly
         constexpr int data_bits_in_a_packet = NUM_PACKET_DATA_BITS;
@@ -379,87 +379,88 @@ public:
         //        return false;
         //}
             // add preamble
-        for (int i = 0; i < preamble.size(); ++i) {
-            add_samples_from_a_bit(transmitting_buffer, preamble[i]);
-        }
+            for (int i = 0; i < preamble.size(); ++i) {
+                add_samples_from_a_bit(transmitting_buffer, preamble[i]);
+            }
 
-        // Add destination, source, type, packet number(start from 0).
-        int concatenate = (OTHER_MAC_ADDRESS << 5) + (MY_MAC_ADDRESS << 2)
-            + (status == Tx_data ? (int)Frame_Type::data : (int)Frame_Type::ack);
-        concatenate <<= PACKET_NUM_BITS;
-        if (status == Tx_data) {
-            concatenate += transmitted_packet;
-        }
-        else {
-            if (repeated_packet_num != -1) {
-                concatenate += repeated_packet_num;
+            // Add destination, source, type, packet number(start from 0).
+            int concatenate = (OTHER_MAC_ADDRESS << 5) + (MY_MAC_ADDRESS << 2)
+                + (status == Tx_data ? (int)Frame_Type::data : (int)Frame_Type::ack);
+            concatenate <<= PACKET_NUM_BITS;
+            if (status == Tx_data) {
+                concatenate += transmitted_packet;
             }
             else {
-                concatenate += received_packet - 1;
-            }
-        }
-        for (int i = NUM_DEST_BITS + NUM_SRC_BITS + NUM_TYPE_BITS + PACKET_NUM_BITS - 1; i >= 0; --i) {
-            int bit = concatenate >> i & 1;
-            if (bit == 1) {
-                add_samples_from_a_bit(transmitting_buffer, bit);
-            }
-            // 0
-            else {
-                add_samples_from_a_bit(transmitting_buffer, bit);
-            }
-        }
-        /////////////////////////////////
-        // TODO: this is unfinished!!!!
-        // /////////////////////////////////
-        // data length, 16 bits
-        int len = 0;
-        for (int i = 0; i < NUM_DATE_LEN_BITS; ++i) {
-            add_samples_from_a_bit(transmitting_buffer, 0);
-        }
-        ////////////////////////////////////////////////////
-        // data
-        if (status == Tx_data) {
-            for (int i = transmitted_packet * data_bits_in_a_packet; i < (transmitted_packet + 1) * data_bits_in_a_packet; ++i) {
-                add_samples_from_a_bit(transmitting_buffer, (int)bits[i]);
-            }
-            // add crc
-            for (int i = 0; i < 10; ++i) {
-                unsigned crc_t = default_trans_wire.crc_32_t[transmitted_packet * 10 + i];
-                for (int j = 31; j >= 0; --j) {
-                    int bit = (crc_t >> j & 1);
-                    add_samples_from_a_bit(transmitting_buffer, bit);
+                if (repeated_packet_num != -1) {
+                    concatenate += repeated_packet_num;
+                }
+                else {
+                    concatenate += received_packet - 1;
                 }
             }
-        }
-        else if (status == Tx_ack) {
-            for (int i = 0; i < 500; ++i) {
-                // random content
-                add_samples_from_a_bit(transmitting_buffer, i & 1);
+            for (int i = NUM_DEST_BITS + NUM_SRC_BITS + NUM_TYPE_BITS + PACKET_NUM_BITS - 1; i >= 0; --i) {
+                int bit = concatenate >> i & 1;
+                if (bit == 1) {
+                    add_samples_from_a_bit(transmitting_buffer, bit);
+                }
+                // 0
+                else {
+                    add_samples_from_a_bit(transmitting_buffer, bit);
+                }                
             }
-        }
+            /////////////////////////////////
+            // TODO: this is unfinished!!!!
+            // /////////////////////////////////
+            // data length, 16 bits
+            int len = 0;
+            for (int i = 0; i < NUM_DATE_LEN_BITS; ++i) {
+                add_samples_from_a_bit(transmitting_buffer, 0);
+            }
+            ////////////////////////////////////////////////////
+            // data
+            if (status == Tx_data) {
+                for (int i = transmitted_packet * data_bits_in_a_packet; i < (transmitted_packet + 1) * data_bits_in_a_packet; ++i) {
+                    add_samples_from_a_bit(transmitting_buffer, (int)bits[i]);
+                }
+                // add crc
+                for (int i = 0; i < 10; ++i) {
+                    unsigned crc_t = default_trans_wire.crc_32_t[transmitted_packet * 10 + i];
+                    for (int j = 31; j >= 0; --j) {
+                        int bit = (crc_t >> j & 1);
+                        add_samples_from_a_bit(transmitting_buffer, bit);
+                    }
+                }
+            }
+            else if (status == Tx_ack) {
+                for (int i = 0; i < 500; ++i) {
+                    // random content
+                    add_samples_from_a_bit(transmitting_buffer, i & 1);
+                }
+            }        
         return true;
     }
 
     //inBuffer is not used,outBuffer is used to read from tranmittion_buffer,and read the num_samples sample
     //trans finished then return true
-    bool Trans(const float *inBuffer, float *outBuffer, int num_samples) {
+    bool Trans(const float *inBuffer, float *outBuffer, int num_samples)
+    {
         bool silence = false;
 
-        for (int i = 0; i < num_samples; i++) {
+            for (int i = 0; i < num_samples; i++) {
+                if (transfer_num >= transmitting_buffer.size()) {
+                    silence = true;
+                    outBuffer[i] = 0;
+                }
+                else {
+                    outBuffer[i] = (float)transmitting_buffer[transfer_num];
+                    transfer_num++;
+                }
+            }
             if (transfer_num >= transmitting_buffer.size()) {
-                silence = true;
-                outBuffer[i] = 0;
+                transfer_num = 0;
+                transmitting_buffer.clear();
             }
-            else {
-                outBuffer[i] = (float)transmitting_buffer[transfer_num];
-                transfer_num++;
-            }
-        }
-        if (transfer_num >= transmitting_buffer.size()) {
-            transfer_num = 0;
-            transmitting_buffer.clear();
-        }
-        Write("transmitting_buffer.txt", transmitting_buffer);
-        return silence;
+            Write("transmitting_buffer.txt", transmitting_buffer);
+            return silence;
     }
 };

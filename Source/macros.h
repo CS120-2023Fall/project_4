@@ -35,8 +35,8 @@
 #define IS_ROUTER true
 #define MY_IP 0x111
 #define PING_MODE true
-#define NUM_IP_HEADER_BITS 8
 
 #define TEST_CRC false
 #define CORNER_LOG false
 #define STOP_THREASHOLD 93000
+

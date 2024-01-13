@@ -24,7 +24,7 @@ public:
         for (int packet = 0; packet < NUM_TOTAL_PACKETS; ++packet) {
             char oneByte = 0;
             // first 9 calculation, 504 * 9 bits
-            for (int one_calculation_start = 0; one_calculation_start + 504 < NUM_PACKET_DATA_BITS;
+            for (int one_calculation_start = 0; one_calculation_start + 504 < NUM_PACKET_DATA_BITS; 
                 one_calculation_start += 504) {
                 for (int j = 0; j < 504; ++j) {
                     oneByte = (oneByte << 1) + (char)bits[j + one_calculation_start + packet * NUM_PACKET_DATA_BITS];

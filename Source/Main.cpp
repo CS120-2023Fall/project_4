@@ -9,7 +9,7 @@
 #include <JuceHeader.h>
 #include "MainComponent.h"
 
-//=============================================================================
+//==============================================================================
 class project0Application : public juce::JUCEApplication
 {
 public:
@@ -99,8 +99,7 @@ public:
 private:
     std::unique_ptr<MainWindow> mainWindow;
 };
+
 //==============================================================================
 // This macro generates the main() routine that launches the app.
 START_JUCE_APPLICATION(project0Application)
-
-
