@@ -147,23 +147,24 @@ void Get_Input_To_Buffer(std::vector<char>& char_buffer) {
 void MAC_Layer::refresh_MAC(const float* inBuffer, float* outBuffer, int num_samples)
 {
     KeepSilence(inBuffer, outBuffer, num_samples);
-    if (is_host && !start_dns) { Get_Input(); }
-    if (char_buffer.size() > 4) {
-        std::string s;
-        for (int i = 0; i < 4;i++) {
-            s.push_back(char_buffer[i]);
-        }
-        if (s == "ping") {
-            start_dns = true;
-        }
-        else {
-            char_buffer.clear();
-        }
-        for (auto& i : char_buffer) {
-            std::cout << i;
-        }
-        
-    }
+    //if (is_host && !start_dns) { Get_Input(); }
+    //if (char_buffer.size() > 4) {
+    //    std::string s;
+    //    for (int i = 0; i < 4;i++) {
+    //        s.push_back(char_buffer[i]);
+    //    }
+    //    if (s == "ping") {
+    //        start_dns = true;
+    //    }
+    //    else {
+    //        char_buffer.clear();
+    //    }
+    //    for (auto& i : char_buffer) {
+    //        std::cout << i;
+    //    }
+    //    
+    //}
+    handler.send_the_dns_request(1,1);
     if (macState == MAC_States_Set::ICMP_ping_wan)
     {
 

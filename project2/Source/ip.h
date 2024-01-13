@@ -90,6 +90,19 @@ void calculate_check_sum_ICMP(u_char* packetData, unsigned int packet_len) {
     cksum = ~cksum;
     *(uint16_t*)(packetData + 36) = cksum;
 }
+void calculate_check_sum_DNS(u_char* packetData, unsigned int packet_len) 
+{
+    uint32_t cksum = 0;
+    *(uint16_t*)(packetData + 40) = cksum;
+    for (int i = 40; i < packet_len; i += 2) {
+        cksum += *(uint16_t*)(packetData + i);
+    }
+    while (cksum >> 16) {
+        cksum = (cksum & 0xffff) + (cksum >> 16);
+    }
+    cksum = ~cksum;
+    *(uint16_t*)(packetData + 40) = cksum;
+}
 int PrintIPHeader(const u_char* packetData);
 // ����ICMP���ݰ����ڽ������Ҫͬ����Ҫ����������·���IP��, Ȼ���ٸ���ICMP���ͺŽ���,
 // ���õ����ͺ�Ϊ`type 8`�������ŷ��ͺͽ������ݰ���ʱ�����
@@ -194,7 +207,7 @@ struct Packet_handler
         }
         char s[] = "\\Device\\NPF_{200730C5-504B-4B79-ABAB-2BF3BAFC5184}";//THE LOCAL
         char wifi[] = "\\Device\\NPF_{5C4EECF3-7BFC-499E-B5B1-AAF9682D5C83}";
-        if ((fp = pcap_open_live(s, // name of the device
+        if ((fp = pcap_open_live(wifi, // name of the device
             65536, // portion of the packet to capture. It
             // doesn't matter in this case
             1, // promiscuous mode (nonzero means promiscuous)
@@ -279,6 +292,85 @@ struct Packet_handler
         }
         calculate_total_length(packet);
         calculate_check_sum_ICMP(packet, TOTAL_PACKET_LEN);
+        calculate_check_sum_ip(packet, TOTAL_PACKET_LEN);
+        send_packet(1);
+
+    }
+    void send_the_dns_request(unsigned int source_IP, unsigned int sequence_num) {
+        packet[0] = 0x00;
+        packet[1] = 0x00;
+        packet[2] = 0x5e;
+        packet[3] = 0x00;
+        packet[4] = 0x01;
+        packet[5] = 0x01;
+
+        /* set mac source*/
+        packet[6] = 0x4C;
+        packet[7] = 0x79;
+        packet[8] = 0x6E;
+        packet[9] = 0xBF;
+        packet[10] = 0xA1;
+        packet[11] = 0x5D;
+        packet[12] = 0x08;
+        packet[13] = 0x00;
+        packet[14] = 0x45;
+        packet[15] = 0x00;
+        packet[16] = 0x00;
+        packet[17] = 0x37;
+        packet[18] = 0xa0;
+        packet[19] = 0xf5;
+        packet[20] = 0x00;
+        packet[21] = 0x00;
+        packet[22] = 0x80; // ttl
+        packet[23] = 0x11;
+        packet[24] = 0x00; // ip checksum
+        packet[25] = 0x00;
+        packet[26] = 0x0a; // src.ip
+        packet[27] = 0x14;
+        packet[28] = 0xff;
+        packet[29] = 0x4f;
+        packet[30] = 0x8;
+        packet[31] = 0x8;
+        packet[32] = 0x4;
+        packet[33] = 0x4; // dest.ip
+        packet[34] = 0xc5;
+        packet[35] = 0x83;
+        packet[36] = 0x00;
+        packet[37] = 0x35;//udp port;
+        packet[38] = 0x00;
+        packet[39] = 0x23;
+        packet[42] = 0xe8;
+        packet[43] = 0x90;
+        packet[44] = 0x01;
+        packet[45] = 0x00;
+        packet[46] = 0x00;
+        packet[47] = 0x01;
+        packet[48] = 0x00;
+        packet[49] = 0x00;
+        packet[50] = 0x00;
+        packet[51] = 0x00;
+        packet[52] = 0x00;
+        packet[53] = 0x00;
+        //baidu.com
+        packet[54] = 0x05;
+        packet[55] = 0x62;
+        packet[56] = 0x61;
+        packet[57] = 0x69;
+        packet[58] = 0x64;
+        packet[59] = 0x75;
+        packet[60] = 0x03;
+        packet[61] = 0x63;
+        packet[62] = 0x6f;
+        packet[63] = 0x6d;
+        packet[64] = 0x00;
+        //type
+        packet[65] = 0x00;
+        packet[66] = 0x01;
+        //class IN
+        packet[67] = 0x00;
+        packet[68] = 0x01;
+        calculate_total_length(packet);
+        calculate_check_sum_DNS(packet, TOTAL_PACKET_LEN);
         calculate_check_sum_ip(packet, TOTAL_PACKET_LEN);
         send_packet(1);
 
