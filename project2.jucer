@@ -1,25 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<JUCERPROJECT id="x0ZF8D" name="project2" projectType="guiapp" useAppConfig="0"
+<JUCERPROJECT id="x0ZF8D" name="project4" projectType="guiapp" useAppConfig="0"
               addUsingNamespaceToJuceHeader="0" displaySplashScreen="1" jucerFormatVersion="1">
-  <MAINGROUP id="ElBSs8" name="project2">
-    <GROUP id="{C0B48D39-9DB0-C287-0898-4A39D011BC5B}" name="Source">
-      <FILE id="HlQgyK" name="CRC.h" compile="0" resource="0" file="../Source/CRC.h"/>
-      <FILE id="hm1IJp" name="diff_part2.cpp" compile="1" resource="0" file="../Source/diff_part2.cpp"/>
-      <FILE id="wdqznF" name="fft.h" compile="0" resource="0" file="../Source/fft.h"/>
-      <FILE id="c87p17" name="filter.h" compile="0" resource="0" file="../Source/filter.h"/>
-      <FILE id="ONaeLM" name="ip.h" compile="0" resource="0" file="../Source/ip.h"/>
-      <FILE id="Dgt4UR" name="MAC.h" compile="0" resource="0" file="../Source/MAC.h"/>
-      <FILE id="icnlmQ" name="macros.h" compile="0" resource="0" file="../Source/macros.h"/>
-      <FILE id="bbjl7A" name="Main.cpp" compile="1" resource="0" file="../Source/Main.cpp"/>
-      <FILE id="z7M7EL" name="MainComponent.h" compile="0" resource="0" file="../Source/MainComponent.h"/>
-      <FILE id="SMkMbY" name="modulate_and_demoudulate.h" compile="0" resource="0"
-            file="../Source/modulate_and_demoudulate.h"/>
-      <FILE id="is98iE" name="receiver_transfer.h" compile="0" resource="0"
-            file="../Source/receiver_transfer.h"/>
-      <FILE id="w6S7sx" name="transmitter.h" compile="0" resource="0" file="../Source/transmitter.h"/>
-      <FILE id="U4LQ3A" name="utility.h" compile="0" resource="0" file="../Source/utility.h"/>
-    </GROUP>
+  <MAINGROUP id="ElBSs8" name="project4">
+    <FILE id="yxbJ4v" name="CRC.h" compile="0" resource="0" file="Source/CRC.h"/>
+    <FILE id="HTnD27" name="diff_part2.cpp" compile="1" resource="0" file="Source/diff_part2.cpp"/>
+    <FILE id="rAhNHQ" name="fft.h" compile="0" resource="0" file="Source/fft.h"/>
+    <FILE id="cleb4w" name="filter.h" compile="0" resource="0" file="Source/filter.h"/>
+    <FILE id="ai4tXS" name="ip.h" compile="0" resource="0" file="Source/ip.h"/>
+    <FILE id="p0aJ9N" name="MAC.h" compile="0" resource="0" file="Source/MAC.h"/>
+    <FILE id="kf9aTX" name="macros.h" compile="0" resource="0" file="Source/macros.h"/>
+    <FILE id="ekdKxC" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
+    <FILE id="TZff5H" name="MainComponent.h" compile="0" resource="0" file="Source/MainComponent.h"/>
+    <FILE id="pFqKgd" name="modulate_and_demoudulate.h" compile="0" resource="0"
+          file="Source/modulate_and_demoudulate.h"/>
+    <FILE id="Kvf9wu" name="receiver_transfer.h" compile="0" resource="0"
+          file="Source/receiver_transfer.h"/>
+    <FILE id="KS9evX" name="transmitter.h" compile="0" resource="0" file="Source/transmitter.h"/>
+    <FILE id="w1YHbB" name="utility.h" compile="0" resource="0" file="Source/utility.h"/>
   </MAINGROUP>
   <MODULES>
     <MODULE id="juce_audio_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>

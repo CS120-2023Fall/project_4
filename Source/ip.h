@@ -1,9 +1,9 @@
 #include <pcap.h>
 #include <stdio.h>
 
-#define WIN32
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
-#pragma warning(disable : 4995)
+//#define WIN32
+//#define _WINSOCK_DEPRECATED_NO_WARNINGS
+//#pragma warning(disable : 4995)
 #pragma comment(lib, "wpcap.lib")
 #pragma comment(lib, "ws2_32.lib")
 // reference https://cloud.tencent.com/developer/article/2351541
@@ -12,6 +12,11 @@
 #define ETHERTYPE_IP 0x0800 /* IP */
 #include <tchar.h>
 #include<thread>
+#include<ctime>
+#include <cstdlib>
+int get_Rand(int min, int max) {
+    return (rand() % (max - min + 1));
+}
 uint16_t TOTAL_PACKET_LEN = 74;
 typedef struct ip_header {
     u_char version : 4;
@@ -37,7 +42,54 @@ typedef struct icmp_header {
     uint16_t send_time;      // ����ʱ���
 } icmp_header;
 
+void from_char_vector_data_to_dns_format(const std::vector<char>& origin_data, std::vector<char>& output_data) {
+    //eg www.baidu.com
+    std::vector<int> dot_index;
+    for (int i = 0; i < origin_data.size(); i++) {
 
+        if (origin_data[i] == '.') {
+            int index = i;
+            int prev_index = -1;
+            if (!dot_index.empty()) {
+                prev_index = dot_index[dot_index.size()-1];
+
+            }
+            unsigned int count = index - prev_index-1;
+            char byte0 = count & (0xff);
+            char byte1 = (count >> 8) & (0xff);
+            output_data.push_back(byte1);
+            output_data.push_back(byte0);
+            for (int j = prev_index+1; j < index; j++) {
+                output_data.push_back(origin_data[j]);
+            }
+            dot_index.push_back(index);
+        }
+        //also deal with the last
+        else if (i == origin_data.size() - 1) {
+            int index = i+1;
+            int prev_index = -1;
+            if (!dot_index.empty()) {
+                prev_index = dot_index[dot_index.size() - 1];
+
+            }
+            unsigned int count = index - prev_index - 1;
+            char byte0 = count & (0xff);
+            char byte1 = (count >> 8) & (0xff);
+            output_data.push_back(byte1);
+            output_data.push_back(byte0);
+            for (int j = prev_index + 1; j < index; j++) {
+                output_data.push_back(origin_data[j]);
+            }
+            dot_index.push_back(index);
+        }
+    }
+
+}
+void from_string_to_dns_format(const std::string& s, std::vector<char>& output_data) {
+    std::vector<char> origin_data = from_string_to_char_vector(s);
+    from_char_vector_data_to_dns_format(origin_data, output_data);
+
+}
 namespace Router_table {
     u_char node_2[4] = { 33, 22, 44, 22 }; // the router's ip
     unsigned int* node2_ip = (unsigned int*)node_2;
@@ -94,7 +146,7 @@ void calculate_check_sum_DNS(u_char* packetData, unsigned int packet_len)
 {
     uint32_t cksum = 0;
     *(uint16_t*)(packetData + 40) = cksum;
-    for (int i = 40; i < packet_len; i += 2) {
+    for (int i = 34; i < packet_len; i += 2) {
         cksum += *(uint16_t*)(packetData + i);
     }
     while (cksum >> 16) {
@@ -144,7 +196,9 @@ int PrintICMPHeader(const u_char* packetData) {
     u_char packet[10000];
 struct Packet_handler 
 {
-    Packet_handler() { Initialize(); }
+    Packet_handler() { Initialize()  ;
+    srand(time(0));
+    }
     void Initialize() {
         if (pcap_findalldevs(&alldevs, errbuf) == -1) {
 
@@ -285,8 +339,8 @@ struct Packet_handler
         }
         packet[26] = 10;
         packet[27] = 20;
-        packet[28] = 99;
-        packet[29] = 95;
+        packet[28] = 255;
+        packet[29] = 79;
         for (int i = 0; i < 2; i++) {
             packet[40 + i] = (sequence_num >> (8 * (1 - i))) & 0xff;
         }
@@ -317,8 +371,8 @@ struct Packet_handler
         packet[15] = 0x00;
         packet[16] = 0x00;
         packet[17] = 0x37;
-        packet[18] = 0xa0;
-        packet[19] = 0xf5;
+        packet[18] = 0xfb;
+        packet[19] = 0xdd;
         packet[20] = 0x00;
         packet[21] = 0x00;
         packet[22] = 0x80; // ttl
@@ -329,18 +383,19 @@ struct Packet_handler
         packet[27] = 0x14;
         packet[28] = 0xff;
         packet[29] = 0x4f;
-        packet[30] = 0x8;
-        packet[31] = 0x8;
-        packet[32] = 0x4;
-        packet[33] = 0x4; // dest.ip
-        packet[34] = 0xc5;
-        packet[35] = 0x83;
+        packet[30] = 192;
+        packet[31] = 168;
+        packet[32] =137;
+        packet[33] = 36; // dest.ip
+        packet[34] = 0xd3;
+        packet[35] = 0xdd;
         packet[36] = 0x00;
         packet[37] = 0x35;//udp port;
         packet[38] = 0x00;
         packet[39] = 0x23;
-        packet[42] = 0xe8;
+        packet[42] = 0xe8;//transction_id
         packet[43] = 0x90;
+        //
         packet[44] = 0x01;
         packet[45] = 0x00;
         packet[46] = 0x00;
@@ -369,10 +424,99 @@ struct Packet_handler
         //class IN
         packet[67] = 0x00;
         packet[68] = 0x01;
-        calculate_total_length(packet);
-        calculate_check_sum_DNS(packet, TOTAL_PACKET_LEN);
-        calculate_check_sum_ip(packet, TOTAL_PACKET_LEN);
+        packet[42] = 0x6a;
+        packet[43] = 0x2d;
+
+        packet[0] =0x00;
+        packet[1] = 0x00;
+        packet[2] = 0x5e;
+        packet[3] =0x00;
+        packet[4] = 0x01;
+        packet[5] = 0x01;
+        packet[6] = 0x4c;
+        packet[7] = 0x79;
+        packet[8] = 0x6e;
+        packet[9] = 0xbf;
+        packet[10] = 0xa1;
+        packet[11] = 0x5d;
+        packet[12] = 0x08;
+        packet[13] = 0x00;
+        packet[14] = 0x45;
+        packet[15] = 0x00;
+        packet[16] = 0x00;
+        packet[17] = 0x3b;
+        packet[18] = 0xc7;
+        packet[19] = 0x8f;
+        packet[20] = 0x00;
+        packet[21] = 0x00;
+        packet[22] = 0x80;
+        packet[23] = 0x11;
+        packet[24] = 0x00;
+        packet[25] = 0x00;
+        packet[26] = 0x0a;
+        packet[27] = 0x14;
+        packet[28] = 0xff;
+        packet[29] = 0x4f;
+        packet[30] = 0x0a;
+        packet[31] = 0x0f;
+        packet[32] = 0x2c;
+        packet[33] = 0x0b;
+        packet[34] = 0xca;
+        packet[35] = 0x54;
+        packet[36] = 0x00;
+        packet[37] = 0x35;
+        packet[38] = 0x00;
+        packet[39] = 0x27;
+        packet[40] = 0x3f;
+        packet[41] = 0xb6;
+        packet[42] = 0x22;
+        packet[43] = 0x94;
+        packet[44] = 0x01;
+        packet[45] = 0x00;
+        packet[46] = 0x00;
+        packet[47] = 0x01;
+        packet[48] = 0x00;
+        packet[49] = 0x00;
+        packet[50] = 0x00;
+        packet[51] = 0x00;
+        packet[52] = 0x00;
+        packet[53] = 0x00;
+        packet[54] = 0x03;
+        packet[55] = 0x77;
+        packet[56] = 0x77;
+        packet[57] = 0x77;
+        packet[58] = 0x05;
+        packet[59] = 0x62;
+        packet[60] = 0x61;
+        packet[61] = 0x69;
+        packet[62] = 0x64;
+        packet[63] = 0x75;
+        packet[64] = 0x03;
+        packet[65] = 0x63;
+        packet[66] = 0x6f;
+        packet[67] = 0x6d;
+        packet[68] = 0x00;
+        packet[69] = 0x00;
+        packet[70] = 0x01;
+        packet[71] = 0x00;
+        packet[72] = 0x01;
+        TOTAL_PACKET_LEN = 73;
+        //calculate_total_length(packet);
+        //calculate_check_sum_DNS(packet, TOTAL_PACKET_LEN);
+
+        //calculate_check_sum_ip(packet, TOTAL_PACKET_LEN);
+        //packet[24] = 0x00;
+        //packet[25] = 0x00;
+        //packet[40] = 0x15;
+        //packet[41] = 0xa4;
         send_packet(1);
+        //packet[66] = 0x1c;
+        //packet[42] = 0x8a;
+        //packet[43] = 0x2d;
+        //calculate_total_length(packet);
+        //calculate_check_sum_DNS(packet, TOTAL_PACKET_LEN);
+        //calculate_check_sum_ip(packet, TOTAL_PACKET_LEN);
+        //send_packet(1);
 
     }
     void send_packet(int num) {
