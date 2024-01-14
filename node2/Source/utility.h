@@ -7,6 +7,7 @@
 #define MAX_WRITE_DATA_SIZE 24000
 #include <tchar.h>
 #include<stdint.h>
+#define ENTERING std::cout<<"entering"<<std::endl;
 //file operator
 inline std::vector<bool> Read_bits(const std::string& path)//read_bits_from file
 {
