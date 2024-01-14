@@ -673,7 +673,7 @@ return trans_id;
             }
         }
         return -1;
-    }
+    } 
     //1 is icmp response and 2 is dns response 
     int detect_response(u_char *detected = nullptr) {
         pcap_pkthdr *pkt_header;
