@@ -2,6 +2,7 @@
 #include<deque>
 #include <vector>
 #include<iomanip>
+#include<string>
 #include "transmitter.h"
 #include "macros.h"
 
@@ -25,7 +26,22 @@ enum  Rx_Frame_Received_Type {
 
 
 class Receiver {
+private:
+    int matched_preamble_len{ 0 };
+    bool header_processed{ false };
+    bool repeated_data_flag{ false };
 public:
+    //std::vector<double> receive_buffer = empty;
+    std::deque<double> sync_buffer;
+    std::deque<double> decode_buffer;
+    std::deque<int>received_bits; // Decoded bits. Received message.
+    std::vector<int> preamble;
+    std::vector<int> check_crc_bits; // 0 or 1 int
+    int start_index = -1;
+    unsigned int received_packet = 0;
+    int repeated_packet_num{ -1 };
+    int data_part_len{ 0 };
+
     Receiver() :preamble(default_trans_wire.preamble), check_crc_bits(NUM_CRC_BITS_PER_PACKET, 0) {
         Initialize();
     }
@@ -120,6 +136,13 @@ public:
                     decode_buffer.clear();
                     return error;
                 }
+                // data len
+                unsigned len = 0;
+                for (int i = NUM_MAC_HEADER_BITS - NUM_DATE_LEN_BITS ; i < NUM_MAC_HEADER_BITS; ++i) {
+                    len = (len << 1) + (unsigned)header_vec[i];
+                }
+                data_part_len = (int)len;
+
                 // ack
                 if (Frame_Type(type) == Frame_Type::ack) {
                     if (packet_num != transmitted_packet) {
@@ -147,7 +170,7 @@ public:
                 }
             }
             // decode data and crc
-            if (header_processed && decode_buffer.size() >= (NUM_MAC_HEADER_BITS + NUM_PACKET_DATA_BITS + NUM_CRC_BITS_PER_PACKET) * NUM_SAMPLES_PER_BIT) {
+            if (header_processed && decode_buffer.size() >= (NUM_MAC_HEADER_BITS + data_part_len) * NUM_SAMPLES_PER_BIT) {
                 if (repeated_data_flag) {
                     decode_buffer.clear();
                     header_processed = false;
@@ -156,84 +179,85 @@ public:
                 }
                 // start_position: Data part start position. bit index, remember x4
                 int start_position = NUM_MAC_HEADER_BITS;
-                std::deque<int> received_bits_tmp;
-                for (int bit_index = start_position; bit_index < start_position + NUM_PACKET_DATA_BITS; ++bit_index) {
-                    received_bits_tmp.emplace_back(decode_a_bit(decode_buffer, bit_index * 4));
-                    //received_bits.emplace_back(decode_a_bit(decode_buffer, bit_index * 4));
+                //std::deque<int> received_bits_tmp;
+                for (int bit_index = start_position; bit_index < start_position + data_part_len; ++bit_index) {
+                    //received_bits_tmp.emplace_back(decode_a_bit(decode_buffer, bit_index * 4));
+                    received_bits.emplace_back(decode_a_bit(decode_buffer, bit_index * 4));
                 }
                 // decode crc
-                for (int bit_index = start_position + NUM_PACKET_DATA_BITS, i = 0; 
-                    bit_index < start_position + NUM_PACKET_DATA_BITS + NUM_CRC_BITS_PER_PACKET; ++bit_index, ++i) {
-                    check_crc_bits[i] = decode_a_bit(decode_buffer, bit_index * 4);
-                }
+                //for (int bit_index = start_position + NUM_PACKET_DATA_BITS, i = 0; 
+                //    bit_index < start_position + NUM_PACKET_DATA_BITS + NUM_CRC_BITS_PER_PACKET; ++bit_index, ++i) {
+                //    check_crc_bits[i] = decode_a_bit(decode_buffer, bit_index * 4);
+                //}
 
-                Write("received_tmp.txt", received_bits_tmp);
-                FILE *file = fopen("crc_tmp.txt", "w");
-                for (int i = 0; i < 320; ++i) {
-                    fprintf(file, "%d ", check_crc_bits[i]);
-                    if ((i + 1) % 32 == 0) {
-                        fprintf(file, "\n");
-                    }
-                }
-                fclose(file);
+                //Write("received_tmp.txt", received_bits_tmp);
+                //FILE *file = fopen("crc_tmp.txt", "w");
+                //for (int i = 0; i < 320; ++i) {
+                //    fprintf(file, "%d ", check_crc_bits[i]);
+                //    if ((i + 1) % 32 == 0) {
+                //        fprintf(file, "\n");
+                //    }
+                //}
+                //fclose(file);
 
                 //exit(1);
 
                 // calculate and check crc
                 bool crc_correct = true;
+
                 //int received_tmp_read_count = 0;  // count for bits
-                char bytes_for_calculation[63] = { 0 };  // for 500 bits
-                int received_crc_read_count = 0;  // a reader for check_crc_bits[], the received crc part.
-                // check first 504* 9 = 4536 bits
-                char tmp_byte = 0;
-                for (int tmp_bits_group_start = 0; tmp_bits_group_start + 504 < NUM_PACKET_DATA_BITS && crc_correct; 
-                    tmp_bits_group_start += 504) {
-                    for (int i = 0; i < 504; ++i) {
-                        tmp_byte = (tmp_byte << 1) + (char)received_bits_tmp[i + tmp_bits_group_start];
-                        if ((i + 1) % 8 == 0) {
-                            bytes_for_calculation[i / 8] = tmp_byte;
-                            tmp_byte = 0;
-                        }
-                    }  // a group of bytes is ready to calculate crc
-                    std::uint32_t crc = CRC::CalculateBits(bytes_for_calculation, sizeof(bytes_for_calculation) * 8, CRC::CRC_32());
-                    //printf("crc: %x\n", crc);
-                    //std::cout <<"crc: " << std::hex << crc << std::endl;
-                    // Compare with received crc bits.
-                    for (int i = 31; i >= 0; --i) {
-                        if ((crc >> i & 1) != (std::uint32_t)check_crc_bits[received_crc_read_count++]) {
-                            crc_correct = false;
-                            std::cout << "crc error1 at: " << (received_crc_read_count - 1) << std::endl;
-                            break;
-                        }
-                    }
-                } // end of first 504 * 9 bits
-                // calculate the last 464 bits
-                tmp_byte = 0;
-                for (int i = 504 * 9; i < 5000 && crc_correct; ++i) {
-                    tmp_byte = (tmp_byte << 1) + (char)received_bits_tmp[i];
-                    if ((i + 1) % 8 == 0) {
-                        bytes_for_calculation[(i - 504 * 9) / 8] = tmp_byte;
-                        tmp_byte = 0;
-                    }
-                }
-                std::uint32_t crc = CRC::CalculateBits(bytes_for_calculation, 464, CRC::CRC_32());
-                for (int i = 31; i >= 0 && crc_correct; --i) {
-                    if ((crc >> i & 1) != (std::uint32_t)check_crc_bits[received_crc_read_count++]) {
-                        crc_correct = false;
-                        std::cout << "crc error2 at: " << (received_crc_read_count - 1) << std::endl;
-                        break;
-                    }
-                }  // end of processing last 464 bits
+                //char bytes_for_calculation[63] = { 0 };  // for 500 bits
+                //int received_crc_read_count = 0;  // a reader for check_crc_bits[], the received crc part.
+                //// check first 504* 9 = 4536 bits
+                //char tmp_byte = 0;
+                //for (int tmp_bits_group_start = 0; tmp_bits_group_start + 504 < NUM_PACKET_DATA_BITS && crc_correct; 
+                //    tmp_bits_group_start += 504) {
+                //    for (int i = 0; i < 504; ++i) {
+                //        tmp_byte = (tmp_byte << 1) + (char)received_bits_tmp[i + tmp_bits_group_start];
+                //        if ((i + 1) % 8 == 0) {
+                //            bytes_for_calculation[i / 8] = tmp_byte;
+                //            tmp_byte = 0;
+                //        }
+                //    }  // a group of bytes is ready to calculate crc
+                //    std::uint32_t crc = CRC::CalculateBits(bytes_for_calculation, sizeof(bytes_for_calculation) * 8, CRC::CRC_32());
+                //    //printf("crc: %x\n", crc);
+                //    //std::cout <<"crc: " << std::hex << crc << std::endl;
+                //    // Compare with received crc bits.
+                //    for (int i = 31; i >= 0; --i) {
+                //        if ((crc >> i & 1) != (std::uint32_t)check_crc_bits[received_crc_read_count++]) {
+                //            crc_correct = false;
+                //            std::cout << "crc error1 at: " << (received_crc_read_count - 1) << std::endl;
+                //            break;
+                //        }
+                //    }
+                //} // end of first 504 * 9 bits
+                //// calculate the last 464 bits
+                //tmp_byte = 0;
+                //for (int i = 504 * 9; i < 5000 && crc_correct; ++i) {
+                //    tmp_byte = (tmp_byte << 1) + (char)received_bits_tmp[i];
+                //    if ((i + 1) % 8 == 0) {
+                //        bytes_for_calculation[(i - 504 * 9) / 8] = tmp_byte;
+                //        tmp_byte = 0;
+                //    }
+                //}
+                //std::uint32_t crc = CRC::CalculateBits(bytes_for_calculation, 464, CRC::CRC_32());
+                //for (int i = 31; i >= 0 && crc_correct; --i) {
+                //    if ((crc >> i & 1) != (std::uint32_t)check_crc_bits[received_crc_read_count++]) {
+                //        crc_correct = false;
+                //        std::cout << "crc error2 at: " << (received_crc_read_count - 1) << std::endl;
+                //        break;
+                //    }
+                //}  // end of processing last 464 bits
 
 /////////////////////////////  delete me ////////////////////
                 //crc_correct = true;
 //////////////////////////////////////////////////////////
 
-                if (crc_correct) {
-                    for (auto &i : received_bits_tmp) {
-                        received_bits.emplace_back(i);
-                    }
-                }
+                //if (crc_correct) {
+                //    for (auto &i : received_bits_tmp) {
+                //        received_bits.emplace_back(i);
+                //    }
+                //}
 
                 decode_buffer.clear();
                 header_processed = false;
@@ -243,7 +267,16 @@ public:
                 }
 
                 std::cout << "exit after receiving data" << std::endl;
-                //Write("decode_log.txt", decode_buffer);
+                std::string t(received_bits.size() / 8, (char)0);
+                char tmp = 0;
+                for (int i = 0; i < (int)received_bits.size(); ++i) {
+                    tmp = (tmp << 1) + received_bits[i];
+                    if ((i + 1) % 8 == 0) {
+                        t[i / 8] = tmp;
+                    }
+                }
+                std::cout << "received url: " << t << std::endl;                
+                
                 return valid_data;
             }  // end of processing data/ack
         }
@@ -305,21 +338,6 @@ public:
         else
             return false;
     }
-public:
-    //std::vector<double> receive_buffer = empty;
-    std::deque<double> sync_buffer;
-    std::deque<double> decode_buffer;
-    std::deque<int>received_bits; // Decoded bits. Received message.
-    std::vector<int> preamble;
-    std::vector<int> check_crc_bits; // 0 or 1 int
-    int start_index = -1;
-    unsigned int received_packet = 0;
-    int repeated_packet_num{ -1 };
-
-private:
-    int matched_preamble_len{ 0 };
-    bool header_processed{ false };
-    bool repeated_data_flag{ false };
 };
 
 enum Tx_frame_status {
@@ -332,21 +350,22 @@ class Transfer {
 public:
     Transfer() : preamble(default_trans_wire.preamble) {
         Initialize();
+        std::string url_string(URL);
+        for (char & c : url_string) {
+            for (int i = 7; i >= 0; --i) {
+                url_bits.emplace_back(c >> i & 1);
+            }
+        }
     }
     void Initialize() {
-        //CRC_symbols.clear();
         transfer_num = 0;
         transmitting_buffer.clear();
         transmitted_packet = 0;
     }
     std::deque<double> transmitting_buffer;
     std::vector<bool>bits = default_trans_wire.bits;
-    //std::vector<unsigned int> symbols = default_trans_wire.symbols;
-    // Preamble's length is 64 bits.
     std::vector<int> preamble;
-    //std::vector<double> packet_sequences;
-    //std::vector<bool> CRC_bits;
-    //std::vector<unsigned> CRC_symbols;
+    std::deque<unsigned> url_bits;  // binary url
     int transfer_num = 0;
     int transmitted_packet = 0;
 
@@ -369,15 +388,11 @@ public:
 
     /// inBuffer ,outBuffer and num_samples is not used,status indicate ack or data you want to add,it will add to the transmittion_buffer 
     /// The return value is not used.
-    bool Add_one_packet(const float *inBuffer, float *outBuffer, int num_samples, Tx_frame_status status, 
+    bool Add_one_packet(const float *inBuffer, float *outBuffer, int num_samples, Tx_frame_status status,const std::deque<unsigned> &bits_to_transmit,
         unsigned int received_packet = 1, int repeated_packet_num = -1) {
         // set these constants properly
         constexpr int data_bits_in_a_packet = NUM_PACKET_DATA_BITS;
-        // 50000 / bits_in_a_packet is the number of packet
-        //if (status == Tx_data) {
-        //    if (transmitted_packet >= maximum_packet)
-        //        return false;
-        //}
+
             // add preamble
             for (int i = 0; i < preamble.size(); ++i) {
                 add_samples_from_a_bit(transmitting_buffer, preamble[i]);
@@ -408,33 +423,32 @@ public:
                     add_samples_from_a_bit(transmitting_buffer, bit);
                 }                
             }
-            /////////////////////////////////
-            // TODO: this is unfinished!!!!
-            // /////////////////////////////////
+
             // data length, 16 bits
-            int len = 0;
+            int len = static_cast<unsigned> (bits_to_transmit.size());
             for (int i = 0; i < NUM_DATE_LEN_BITS; ++i) {
-                add_samples_from_a_bit(transmitting_buffer, 0);
+                add_samples_from_a_bit(transmitting_buffer, (len >> (NUM_DATE_LEN_BITS - 1 - i) & 1));
             }
             ////////////////////////////////////////////////////
             // data
             if (status == Tx_data) {
-                for (int i = transmitted_packet * data_bits_in_a_packet; i < (transmitted_packet + 1) * data_bits_in_a_packet; ++i) {
-                    add_samples_from_a_bit(transmitting_buffer, (int)bits[i]);
+                for (int i = 0; i < (int)bits_to_transmit.size(); ++i) {
+                    add_samples_from_a_bit(transmitting_buffer, (int)bits_to_transmit[i]);
                 }
-                // add crc
-                for (int i = 0; i < 10; ++i) {
-                    unsigned crc_t = default_trans_wire.crc_32_t[transmitted_packet * 10 + i];
-                    for (int j = 31; j >= 0; --j) {
-                        int bit = (crc_t >> j & 1);
-                        add_samples_from_a_bit(transmitting_buffer, bit);
-                    }
-                }
+                //// add crc
+                //for (int i = 0; i < 10; ++i) {
+                //    unsigned crc_t = default_trans_wire.crc_32_t[transmitted_packet * 10 + i];
+                //    for (int j = 31; j >= 0; --j) {
+                //        int bit = (crc_t >> j & 1);
+                //        add_samples_from_a_bit(transmitting_buffer, bit);
+                //    }
+                //}
             }
             else if (status == Tx_ack) {
+                unsigned tmp = 0b1110;
                 for (int i = 0; i < 500; ++i) {
                     // random content
-                    add_samples_from_a_bit(transmitting_buffer, i & 1);
+                    add_samples_from_a_bit(transmitting_buffer, (tmp >> (i % 4) & 1) );
                 }
             }        
         return true;

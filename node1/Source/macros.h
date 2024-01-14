@@ -36,7 +36,6 @@
 #define MY_IP 0x111
 #define PING_MODE true
 
-#define TEST_CRC false
-#define CORNER_LOG false
-#define STOP_THREASHOLD 93000
+#define CORNER_LOG true
+#define URL ("baidu.com")
 

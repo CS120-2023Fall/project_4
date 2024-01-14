@@ -142,14 +142,6 @@ public:
         addAndMakeVisible(T_and_R_Button);
 
 
-        // transmit and receive button
-        //csmaWithJamButton.setButtonText("csma_task");
-        //csmaWithJamButton.setSize(110, 40);
-        //csmaWithJamButton.setCentrePosition(330, 200);
-        //csmaWithJamButton.onClick = [this] {start_csma = true; juceState = juce_States_Set::T_AND_R ; mac.Start();
-        //mes0.setText("csma_task", juce::NotificationType::dontSendNotification); };
-        //addAndMakeVisible(csmaWithJamButton);
-
         recordButton.setButtonText("reflect the sound");
         recordButton.setSize(130, 40);
         recordButton.setCentrePosition(460, 200);
@@ -229,10 +221,10 @@ public:
             
             KeepSilence( inBuffer, outBuffer,  num_samples);
             if (juceState == juce_States_Set::T_AND_R) {
-                mac.TxPending = false;
-                if (mac.startTransmitting && mac.transmitter.transmitted_packet * NUM_PACKET_DATA_BITS  < 50000 && !mac.wait) {
-                    mac.TxPending = true;
-                }
+                //mac.TxPending = false;
+                //if (mac.startTransmitting && mac.transmitter.transmitted_packet * NUM_PACKET_DATA_BITS  < 50000 && !mac.wait) {
+                //    mac.TxPending = true;
+                //}
                
                 // Record the inBuffer. Watch out memory overflow.
                 if (RECORD_IN_LIVE)
