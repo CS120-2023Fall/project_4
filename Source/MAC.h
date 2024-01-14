@@ -149,15 +149,18 @@ void MAC_Layer::refresh_MAC(const float* inBuffer, float* outBuffer, int num_sam
         query_ID %= 200;
         start_dns = true;
         from_string_to_dns_format("www.baidu.com", char_buffer);
-        for (int i = 0; i < char_buffer.size(); i++) {
-            std::cout << (int)char_buffer[i] << " " << std::endl;
+        std::string s = "00005e00010114ac6085c6f186dd6008d6fd0026114020010da8801dfa4be599faf15f76fd1320010da8801d0f2c00100100000f2c0bfb3800350026a60b0fb5010000010000000000000862696c6962696c6903636f6d00001c0001";
+        std::vector<unsigned char  >  packet_data = from_num_string_hex_to_vector(s);
+        char test = 129;
+        for (int i = 0; i < packet_data.size(); i++) {
+            std::cout << (unsigned int)packet_data[i] << " ";
 
         }
-        std::string s = "4c796ebfa15d00005e000101080045000047849a4000ea06f47c22e7eb4e0a14ff4f01bbf5c7cd4d31c32d8a0528501800763f300000150303001a000000000000000392f316d6f06510231f4222e0800d368e81e9";
-        std::vector<char >  packet_data = from_num_string_hex_to_vector(s);
-        for (int i = 0; i < packet_data.size(); i++) {
-            printf("%x", packet_data[i]);
-        }
+        std::cout << packet_data.size()<<":data_size";
+        handler.set_packet(packet_data);
+
+        handler.send_packet(1);
+  
     }
     //if (is_host && !start_dns) { Get_Input(); }
     //if (char_buffer.size() > 4) {

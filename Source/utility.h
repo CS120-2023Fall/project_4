@@ -5,7 +5,8 @@
 #include <fstream>
 #include  <ostream>
 #define MAX_WRITE_DATA_SIZE 24000
-
+#include <tchar.h>
+#include<stdint.h>
 //file operator
 inline std::vector<bool> Read_bits(const std::string& path)//read_bits_from file
 {
@@ -178,15 +179,39 @@ inline std::vector<char> from_string_to_char_vector(const std::string& s) {
 	}
 	return char_buffer;
 }
-std::vector<char> from_num_string_hex_to_vector(const std::string& s) {
-	std::vector<char> num_vector;
-	char num[2];
-	for (int i = 0; i < s.size(); i++) {
-		num[0] = s[i];
-		char converted;
-		sscanf(num, "%x",& converted);
-		num_vector.push_back(converted);
+int hex_function(char c) {
+	if (c >= 'a' && c <= 'z') {
+		return c - 'a' + 10;
 	}
+	else if(c>='0'&& c<='9') {
+		return c - '0';
+	}
+	return -1;
+}
+std::vector<unsigned char > from_num_string_hex_to_vector(const std::string& s)
+{
+	std::vector<unsigned char > num_vector;
+	for (int i = 0; i < s.size(); i+=2) {
+		char  converted_0 = hex_function(s[i]), converted_1 =0;
+
+		if (i + 1 < s.size()) {
+			converted_1 = hex_function(s[i + 1]);
+		}
+		if (i + 1 < s.size()) {
+			std::cout << "the " << i / 2 << "th_value " << (converted_0 << 4) + converted_1<<std::endl;
+			std::cout <<(unsigned int) converted_0 << ":converted0 " << (unsigned int)converted_1 << ":converted_1" << std::endl;
+		
+			num_vector.push_back(converted_0*16+converted_1);
+		
+		}
+		else {
+			num_vector.push_back(converted_0);
+		}
+		converted_1 = 0;
+	}
+	//for (int i = 0; i < num_vector.size(); i++) {
+	//	std::cout << "the " << i <<(unsigned int ) num_vector[i] << std::endl;
+	//}
 	return num_vector;
 
 }

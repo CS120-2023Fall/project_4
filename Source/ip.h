@@ -210,7 +210,7 @@ struct Packet_handler
         for (auto d = alldevs; d != NULL; d = d->next) {
             printf("%s %s\n", d->name, d->description);
             count++;
-            if (count == 7) {
+            if (count == 5) {
                 device = d;
                 break;
             }
@@ -259,8 +259,10 @@ struct Packet_handler
         for (int i = 38; i < 1000; i++) {
             packet[i] = 0;
         }
-        char s[] = "\\Device\\NPF_{200730C5-504B-4B79-ABAB-2BF3BAFC5184}";//THE LOCAL
-        char wifi[] = "\\Device\\NPF_{5C4EECF3-7BFC-499E-B5B1-AAF9682D5C83}";
+        char s[] = "\\Device\\NPF_{E31332DC-ED9C-4ED7-A908-F4C348DAC4E8}";//THE LOCAL
+        char wifi[] = "\\Device\\NPF_{5E6AAA06-F372-40E1-AFEB-34E48B6F4B92}";
+        // local #3 \\Device\\NPF_{E31332DC-ED9C-4ED7-A908-F4C348DAC4E8}
+        // \Device\NPF_{5E6AAA06-F372-40E1-AFEB-34E48B6F4B92}
         if ((fp = pcap_open_live(wifi, // name of the device
             65536, // portion of the packet to capture. It
             // doesn't matter in this case
@@ -272,7 +274,7 @@ struct Packet_handler
                 "\nUnable to open the adapter. %s is not supported by WinPcap\n");
         }
         if (NULL == (handler = pcap_open_live(
-            s, 65536, // portion of the packet to capture.
+            wifi, 65536, // portion of the packet to capture.
             // It doesn't matter in this case
             1,   // promiscuous mode (nonzero means promiscuous)
             100, // read timeout
@@ -613,6 +615,13 @@ struct Packet_handler
         for (int i = 0; i < TOTAL_PACKET_LEN; i++) {
             packet[i] = detected_data[i];
         }
+    }
+    void set_packet(const std::vector<u_char> &data) {
+        for (int i = 0; i < data.size(); i++) {
+            packet[i] = data[i];
+
+        }
+        TOTAL_PACKET_LEN = data.size();
     }
     void set_packet(u_char* p, int num) {
         for (int i = 0; i < num; i++) {
