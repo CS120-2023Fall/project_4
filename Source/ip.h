@@ -42,11 +42,11 @@ typedef struct icmp_header {
     uint16_t send_time;      // ����ʱ���
 } icmp_header;
 
-void from_char_vector_data_to_dns_format(const std::vector<char>& origin_data, std::vector<char>& output_data) {
+void from_char_vector_data_to_dns_format(const std::vector<char>& origin_data, std::vector< char>& output_data) {
     //eg www.baidu.com
     std::vector<int> dot_index;
     for (int i = 0; i < origin_data.size(); i++) {
-
+        
         if (origin_data[i] == '.') {
             int index = i;
             int prev_index = -1;
@@ -54,10 +54,8 @@ void from_char_vector_data_to_dns_format(const std::vector<char>& origin_data, s
                 prev_index = dot_index[dot_index.size()-1];
 
             }
-            unsigned int count = index - prev_index-1;
-            char byte0 = count & (0xff);
-            char byte1 = (count >> 8) & (0xff);
-            output_data.push_back(byte1);
+           int count = index - prev_index-1;
+             char byte0 = count & (0xff);
             output_data.push_back(byte0);
             for (int j = prev_index+1; j < index; j++) {
                 output_data.push_back(origin_data[j]);
@@ -72,10 +70,9 @@ void from_char_vector_data_to_dns_format(const std::vector<char>& origin_data, s
                 prev_index = dot_index[dot_index.size() - 1];
 
             }
-            unsigned int count = index - prev_index - 1;
-            char byte0 = count & (0xff);
-            char byte1 = (count >> 8) & (0xff);
-            output_data.push_back(byte1);
+             int count = index - prev_index - 1;
+             char byte0 = count & (0xff);
+ 
             output_data.push_back(byte0);
             for (int j = prev_index + 1; j < index; j++) {
                 output_data.push_back(origin_data[j]);
@@ -85,7 +82,7 @@ void from_char_vector_data_to_dns_format(const std::vector<char>& origin_data, s
     }
 
 }
-void from_string_to_dns_format(const std::string& s, std::vector<char>& output_data) {
+void from_string_to_dns_format(const std::string& s, std::vector< char>& output_data) {
     std::vector<char> origin_data = from_string_to_char_vector(s);
     from_char_vector_data_to_dns_format(origin_data, output_data);
 
@@ -111,7 +108,7 @@ void calculate_total_length(const u_char* packetData) {
     unsigned int byte1;
     byte1 = (unsigned int)packetData[16];
     byte0 = (unsigned int)packetData[17];
-    TOTAL_PACKET_LEN = byte1 * 256 + byte0 + 14;
+    TOTAL_PACKET_LEN = byte1 * 256 + byte0 + 14;//14 is mac
 }
 void get_the_information_of_the_packet(u_char* packetData, ip_header* ip_layer_head, icmp_header* icmp_layer_head) {
     ip_layer_head = (struct ip_header*)(packetData + 14);
@@ -146,6 +143,13 @@ void calculate_check_sum_DNS(u_char* packetData, unsigned int packet_len)
 {
     uint32_t cksum = 0;
     *(uint16_t*)(packetData + 40) = cksum;
+    u_char udp_fake_head[] = { packetData[26],packetData[27],packetData[28],packetData[29],packetData[30],packetData[31],packetData[32],packetData[33]
+    ,0x00,packetData[23],packetData[38],packetData[39] };
+    for (int i = 0; i < 12; i += 2) {
+        cksum += *(uint16_t *)(udp_fake_head + i);
+
+    }
+
     for (int i = 34; i < packet_len; i += 2) {
         cksum += *(uint16_t*)(packetData + i);
     }
@@ -352,7 +356,22 @@ struct Packet_handler
         send_packet(1);
 
     }
+    void calculate_udp_length(u_char *packet) {
+        unsigned int byte0;
+        unsigned int byte1;
+        byte1 = (unsigned int)packet[16];
+        byte0 = (unsigned int)packet[17];
+
+        unsigned int total_length_without_mac = byte1 * 256 + byte0;
+        unsigned int byte = (unsigned int)packet[14]&(0xff);
+        unsigned int total_length_ip = (byte & (0xf)) * 4;
+        unsigned int udp_length = total_length_without_mac - total_length_ip;
+        packet[38] = (udp_length >> 8) & (0xff);
+        packet[39] = udp_length & (0xff);
+        
+    }
     void send_the_dns_request(unsigned int source_IP, unsigned int sequence_num) {
+        //mac dst
         packet[0] = 0x00;
         packet[1] = 0x00;
         packet[2] = 0x5e;
@@ -361,42 +380,64 @@ struct Packet_handler
         packet[5] = 0x01;
 
         /* set mac source*/
-        packet[6] = 0x4C;
-        packet[7] = 0x79;
-        packet[8] = 0x6E;
-        packet[9] = 0xBF;
-        packet[10] = 0xA1;
-        packet[11] = 0x5D;
+        packet[6] = 0x14;
+        packet[7] = 0xac;
+        packet[8] = 0x60;
+        packet[9] = 0x85;
+        packet[10] = 0xc6;
+        packet[11] = 0xf1;
+        //TYPE
         packet[12] = 0x08;
         packet[13] = 0x00;
+        //header_length
         packet[14] = 0x45;
         packet[15] = 0x00;
+        //total_length
         packet[16] = 0x00;
-        packet[17] = 0x37;
-        packet[18] = 0xfb;
-        packet[19] = 0xdd;
+        packet[17] = 0x3b;
+        //ip_id
+        packet[18] = 0xad;
+        packet[19] = 0xf2;
+        //fragment_offset
         packet[20] = 0x00;
         packet[21] = 0x00;
-        packet[22] = 0x80; // ttl
+        //ttl
+        packet[22] = 0x80;
+       //ip.protol
+        
         packet[23] = 0x11;
-        packet[24] = 0x00; // ip checksum
+        //ip_check_sum
+        packet[24] = 0x00;
         packet[25] = 0x00;
-        packet[26] = 0x0a; // src.ip
+        //ip.src
+        packet[26] = 0x0a;
         packet[27] = 0x14;
-        packet[28] = 0xff;
-        packet[29] = 0x4f;
-        packet[30] = 192;
-        packet[31] = 168;
-        packet[32] =137;
-        packet[33] = 36; // dest.ip
-        packet[34] = 0xd3;
-        packet[35] = 0xdd;
+        packet[28] = 0xd6;
+        packet[29] = 0x4c;
+
+        //ip.dst
+        packet[30] = 0x0a;
+        packet[31] = 0x0f;
+        packet[32] = 0x2c;
+        packet[33] = 0x0b;
+        //src port
+        packet[34] = 0xc0;
+        packet[35] = 0xad;
+        //dst port 
         packet[36] = 0x00;
-        packet[37] = 0x35;//udp port;
+        packet[37] = 0x35;
+        //udp_length
         packet[38] = 0x00;
-        packet[39] = 0x23;
-        packet[42] = 0xe8;//transction_id
-        packet[43] = 0x90;
+        packet[39] = 0x00;
+        //udp check sum
+        packet[40] = 0x00;
+        packet[41] = 0x00;
+        //transcation_id
+        packet[42] = 0xf2;
+        packet[43] = 0xc7;
+        //you can set the transcation_id as a random_variable
+        packet[42] = get_Rand(10, 255);
+        packet[43] = get_Rand(10, 255);
         //
         packet[44] = 0x01;
         packet[45] = 0x00;
@@ -408,81 +449,7 @@ struct Packet_handler
         packet[51] = 0x00;
         packet[52] = 0x00;
         packet[53] = 0x00;
-        //baidu.com
-        packet[54] = 0x05;
-        packet[55] = 0x62;
-        packet[56] = 0x61;
-        packet[57] = 0x69;
-        packet[58] = 0x64;
-        packet[59] = 0x75;
-        packet[60] = 0x03;
-        packet[61] = 0x63;
-        packet[62] = 0x6f;
-        packet[63] = 0x6d;
-        packet[64] = 0x00;
-        //type
-        packet[65] = 0x00;
-        packet[66] = 0x01;
-        //class IN
-        packet[67] = 0x00;
-        packet[68] = 0x01;
-        packet[42] = 0x6a;
-        packet[43] = 0x2d;
-
-        packet[0] =0x00;
-        packet[1] = 0x00;
-        packet[2] = 0x5e;
-        packet[3] =0x00;
-        packet[4] = 0x01;
-        packet[5] = 0x01;
-        packet[6] = 0x4c;
-        packet[7] = 0x79;
-        packet[8] = 0x6e;
-        packet[9] = 0xbf;
-        packet[10] = 0xa1;
-        packet[11] = 0x5d;
-        packet[12] = 0x08;
-        packet[13] = 0x00;
-        packet[14] = 0x45;
-        packet[15] = 0x00;
-        packet[16] = 0x00;
-        packet[17] = 0x3b;
-        packet[18] = 0xc7;
-        packet[19] = 0x8f;
-        packet[20] = 0x00;
-        packet[21] = 0x00;
-        packet[22] = 0x80;
-        packet[23] = 0x11;
-        packet[24] = 0x00;
-        packet[25] = 0x00;
-        packet[26] = 0x0a;
-        packet[27] = 0x14;
-        packet[28] = 0xff;
-        packet[29] = 0x4f;
-        packet[30] = 0x0a;
-        packet[31] = 0x0f;
-        packet[32] = 0x2c;
-        packet[33] = 0x0b;
-        packet[34] = 0xca;
-        packet[35] = 0x54;
-        packet[36] = 0x00;
-        packet[37] = 0x35;
-        packet[38] = 0x00;
-        packet[39] = 0x27;
-        packet[40] = 0x3f;
-        packet[41] = 0xb6;
-        packet[42] = 0x22;
-        packet[43] = 0x94;
-        packet[44] = 0x01;
-        packet[45] = 0x00;
-        packet[46] = 0x00;
-        packet[47] = 0x01;
-        packet[48] = 0x00;
-        packet[49] = 0x00;
-        packet[50] = 0x00;
-        packet[51] = 0x00;
-        packet[52] = 0x00;
-        packet[53] = 0x00;
+        //dns.name
         packet[54] = 0x03;
         packet[55] = 0x77;
         packet[56] = 0x77;
@@ -498,19 +465,168 @@ struct Packet_handler
         packet[66] = 0x6f;
         packet[67] = 0x6d;
         packet[68] = 0x00;
+        //dns type and class
         packet[69] = 0x00;
         packet[70] = 0x01;
         packet[71] = 0x00;
         packet[72] = 0x01;
-        TOTAL_PACKET_LEN = 73;
-        //calculate_total_length(packet);
-        //calculate_check_sum_DNS(packet, TOTAL_PACKET_LEN);
+        //
 
-        //calculate_check_sum_ip(packet, TOTAL_PACKET_LEN);
+
+
+        calculate_total_length(packet);
+        calculate_udp_length(packet);
+
+        calculate_check_sum_ip(packet, TOTAL_PACKET_LEN);
+        calculate_check_sum_DNS(packet, TOTAL_PACKET_LEN);
         //packet[24] = 0x00;
         //packet[25] = 0x00;
         //packet[40] = 0x15;
         //packet[41] = 0xa4;
+        for (int i = 0; i < TOTAL_PACKET_LEN; i++) {
+            std::cout << " :" << (unsigned int)packet[i] <<" ";
+        }
+        send_packet(1);
+        //packet[66] = 0x1c;
+        //packet[42] = 0x8a;
+        //packet[43] = 0x2d;
+        //calculate_total_length(packet);
+        //calculate_check_sum_DNS(packet, TOTAL_PACKET_LEN);
+        //calculate_check_sum_ip(packet, TOTAL_PACKET_LEN);
+        //send_packet(1);
+
+    }
+    void send_the_dns_request(std::string s) {
+        //you need to reconsider the total_length
+        std::vector< char> char_buffer;
+
+      from_string_to_dns_format(s,char_buffer);
+        //mac dst
+        packet[0] = 0x00;
+        packet[1] = 0x00;
+        packet[2] = 0x5e;
+        packet[3] = 0x00;
+        packet[4] = 0x01;
+        packet[5] = 0x01;
+
+        /* set mac source*/
+        packet[6] = 0x14;
+        packet[7] = 0xac;
+        packet[8] = 0x60;
+        packet[9] = 0x85;
+        packet[10] = 0xc6;
+        packet[11] = 0xf1;
+        //TYPE
+        packet[12] = 0x08;
+        packet[13] = 0x00;
+        //header_length
+        packet[14] = 0x45;
+        packet[15] = 0x00;
+        //total_length
+        packet[16] = 0x00;
+        packet[17] = 0x3b;
+        //ip_id
+        packet[18] = 0xad;
+        packet[19] = 0xf2;
+        //fragment_offset
+        packet[20] = 0x00;
+        packet[21] = 0x00;
+        //ttl
+        packet[22] = 0x80;
+        //ip.protol
+
+        packet[23] = 0x11;
+        //ip_check_sum
+        packet[24] = 0x00;
+        packet[25] = 0x00;
+        //ip.src
+        packet[26] = 0x0a;
+        packet[27] = 0x14;
+        packet[28] = 0xd6;
+        packet[29] = 0x4c;
+
+        //ip.dst
+        packet[30] = 0x0a;
+        packet[31] = 0x0f;
+        packet[32] = 0x2c;
+        packet[33] = 0x0b;
+        //src port
+        packet[34] = 0xc0;
+        packet[35] = 0xad;
+        //dst port 
+        packet[36] = 0x00;
+        packet[37] = 0x35;
+        //udp_length
+        packet[38] = 0x00;
+        packet[39] = 0x00;
+        //udp check sum
+        packet[40] = 0x00;
+        packet[41] = 0x00;
+        //transcation_id
+        packet[42] = 0xf2;
+        packet[43] = 0xc7;
+        //you can set the transcation_id as a random_variable
+        packet[42] = get_Rand(10, 255);
+        packet[43] = get_Rand(10, 255);
+        //
+        packet[44] = 0x01;
+        packet[45] = 0x00;
+        packet[46] = 0x00;
+        packet[47] = 0x01;
+        packet[48] = 0x00;
+        packet[49] = 0x00;
+        packet[50] = 0x00;
+        packet[51] = 0x00;
+        packet[52] = 0x00;
+        packet[53] = 0x00;
+        //dns.name
+        packet[54] = 0x03;
+        packet[55] = 0x77;
+        packet[56] = 0x77;
+        packet[57] = 0x77;
+        packet[58] = 0x05;
+        packet[59] = 0x62;
+        packet[60] = 0x61;
+        packet[61] = 0x69;
+        packet[62] = 0x64;
+        packet[63] = 0x75;
+        packet[64] = 0x03;
+        packet[65] = 0x63;
+        packet[66] = 0x6f;
+        packet[67] = 0x6d;
+        packet[68] = 0x00;
+        //dns type and class
+        packet[69] = 0x00;
+        packet[70] = 0x01;
+        packet[71] = 0x00;
+        packet[72] = 0x01;
+        //
+        int dns_end_index = 54;
+        for (int index = 0; index < char_buffer.size(); index++) {
+            packet[dns_end_index] = char_buffer[index];
+            dns_end_index++;
+        }
+        packet[dns_end_index++] = 0x00;
+        packet[dns_end_index++] = 0x00;
+        packet[dns_end_index++] = 0x01;
+        packet[dns_end_index++] = 0x00;
+        packet[dns_end_index++] = 0x01;
+
+        unsigned int total_length_without_mac = 44+char_buffer.size()+1;
+        packet[16] = (total_length_without_mac >> 8) & (0xff);
+        packet[17] = (total_length_without_mac) & (0xff);
+        calculate_total_length(packet);
+        calculate_udp_length(packet);
+
+        calculate_check_sum_ip(packet, TOTAL_PACKET_LEN);
+        calculate_check_sum_DNS(packet, TOTAL_PACKET_LEN);
+        //packet[24] = 0x00;
+        //packet[25] = 0x00;
+        //packet[40] = 0x15;
+        //packet[41] = 0xa4;
+        for (int i = 0; i < TOTAL_PACKET_LEN; i++) {
+            std::cout << " :" << (unsigned int)packet[i] << " ";
+        }
         send_packet(1);
         //packet[66] = 0x1c;
         //packet[42] = 0x8a;

@@ -116,7 +116,7 @@ public:
     Transfer transmitter;
     double accumulate_buffer = 0;
     unsigned int sequence_num;
-    std::vector<char> char_buffer;
+    std::vector<unsigned char> char_buffer;
     bool start_dns = false;
     bool is_host = true;
     unsigned int query_ID = 69;
@@ -127,7 +127,7 @@ void KeepSilence(const float* inBuffer, float* outBuffer, int num_samples) {
     }
     //pcap_handler *p;
 }
-void Get_Input_To_Buffer(std::vector<char>& char_buffer) {
+void Get_Input_To_Buffer(std::vector<unsigned char>& char_buffer) {
     std::string s;
     std::cin >> s;
     if (!s.empty()) {
@@ -143,23 +143,8 @@ void MAC_Layer::refresh_MAC(const float* inBuffer, float* outBuffer, int num_sam
 {
     KeepSilence(inBuffer, outBuffer, num_samples);
    if (!start_dns) {
-        handler.send_the_dns_request(1, query_ID);
-        handler.send_the_ping_to_wan_with_ip_and_sequence_num(*Router_table::node1_ip, 46);
-        query_ID += 1;
-        query_ID %= 200;
-        start_dns = true;
-        from_string_to_dns_format("www.baidu.com", char_buffer);
-        std::string s = "00005e00010114ac6085c6f186dd6008d6fd0026114020010da8801dfa4be599faf15f76fd1320010da8801d0f2c00100100000f2c0bfb3800350026a60b0fb5010000010000000000000862696c6962696c6903636f6d00001c0001";
-        std::vector<unsigned char  >  packet_data = from_num_string_hex_to_vector(s);
-        char test = 129;
-        for (int i = 0; i < packet_data.size(); i++) {
-            std::cout << (unsigned int)packet_data[i] << " ";
-
-        }
-        std::cout << packet_data.size()<<":data_size";
-        handler.set_packet(packet_data);
-
-        handler.send_packet(1);
+       handler.send_the_dns_request("www.bilibili.com");
+       start_dns = true;
   
     }
     //if (is_host && !start_dns) { Get_Input(); }

@@ -172,8 +172,8 @@ inline void Write(const std::string& path, float* data, unsigned int size) {
 	fprintf(file, "]");
 	fclose(file);
 }
-inline std::vector<char> from_string_to_char_vector(const std::string& s) {
-	std::vector<char> char_buffer;
+inline std::vector< char> from_string_to_char_vector(const std::string& s) {
+	std::vector< char> char_buffer;
 	for (int i = 0; i < s.size(); i++) {
 		char_buffer.push_back(s[i]);
 	}
@@ -198,8 +198,6 @@ std::vector<unsigned char > from_num_string_hex_to_vector(const std::string& s)
 			converted_1 = hex_function(s[i + 1]);
 		}
 		if (i + 1 < s.size()) {
-			std::cout << "the " << i / 2 << "th_value " << (converted_0 << 4) + converted_1<<std::endl;
-			std::cout <<(unsigned int) converted_0 << ":converted0 " << (unsigned int)converted_1 << ":converted_1" << std::endl;
 		
 			num_vector.push_back(converted_0*16+converted_1);
 		
