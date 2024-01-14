@@ -37,5 +37,5 @@
 #define PING_MODE true
 
 #define CORNER_LOG true
-#define URL ("baidu.com")
+#define URL ("bing.com")
 
