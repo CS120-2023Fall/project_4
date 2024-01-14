@@ -22,8 +22,8 @@
 
 #define NUM_MAC_HEADER_BITS (NUM_DEST_BITS + NUM_SRC_BITS + NUM_TYPE_BITS + PACKET_NUM_BITS + NUM_DATE_LEN_BITS)
 
-#define MY_MAC_ADDRESS 0b001
-#define OTHER_MAC_ADDRESS 0b010
+#define MY_MAC_ADDRESS 0b010
+#define OTHER_MAC_ADDRESS 0b001
 
 // record real time inBuffer. Stop in time. Otherwise, the vector bombs.
 #define RECORD_IN_LIVE false
@@ -37,6 +37,5 @@
 #define PING_MODE true
 #define NUM_IP_HEADER_BITS 8
 
-#define TEST_CRC false
-#define CORNER_LOG false
-#define STOP_THREASHOLD 93000
+#define CORNER_LOG true
+#define URL ("baidu.com")
