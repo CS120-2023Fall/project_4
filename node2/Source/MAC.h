@@ -38,7 +38,7 @@ public:
     void refresh_MAC(const float* inBuffer, float* outBuffer, int num_samples);
     // prepare for next packet
     void Start() {
-        macState = MAC_States_Set::ICMP_sniff;
+        macState = MAC_States_Set::Idle;
         receiver.Initialize();
         transmitter.Initialize();
         resend = 0;
@@ -111,6 +111,8 @@ private:
     std::chrono::time_point < std::chrono::steady_clock> beforeTime_backoff{ std::chrono::steady_clock::now() };
     std::chrono::time_point<std::chrono::steady_clock> send_Echo_time;
     std::list<double> RTT_log;
+    std::chrono::time_point<std::chrono::steady_clock> beforeTime_carrier_sense{ std::chrono::steady_clock::now() };
+
 public:
     Receiver receiver;
     Transfer transmitter;
@@ -142,11 +144,6 @@ void Get_Input_To_Buffer(std::vector<unsigned char>& char_buffer) {
 void MAC_Layer::refresh_MAC(const float* inBuffer, float* outBuffer, int num_samples)
 {
     KeepSilence(inBuffer, outBuffer, num_samples);
-   if (!start_dns) {
-       handler.send_the_dns_request("www.bilibili.com");
-       start_dns = true;
-  
-    }
     //if (is_host && !start_dns) { Get_Input(); }
     //if (char_buffer.size() > 4) {
     //    std::string s;
@@ -198,8 +195,8 @@ void MAC_Layer::refresh_MAC(const float* inBuffer, float* outBuffer, int num_sam
         if (ans == 5) {
             send_audio_data_ICMP = true;
             macState = MAC_States_Set::TxFrame;
-            bool feedback = transmitter.Add_one_packet(inBuffer, outBuffer, num_samples,
-                Tx_frame_status::Tx_data);
+            //bool feedback = transmitter.Add_one_packet(inBuffer, outBuffer, num_samples,
+            //    Tx_frame_status::Tx_data);
             std::cout << "go" << std::endl;
             ping_audio = std::chrono::steady_clock::now();
             return;
@@ -216,51 +213,48 @@ void MAC_Layer::refresh_MAC(const float* inBuffer, float* outBuffer, int num_sam
         return;
     }
     else if (macState == MAC_States_Set::Idle) {
-        //if (RTT_log.size() >= 10) {
-        //    Write("RTT_log.txt", RTT_log);
-        //    macState = MAC_States_Set::LinkError;
-        //    return;
-        //}
-        // 2. ack time out
-        // ///////////////////////
-        // pass ackTimeout state, exit directly
-        ///////////////////////////////
-        //if (ackTimeOut_valid) {
-        //    auto currentTime = std::chrono::steady_clock::now();
-        //    // milisecond
-        //    double duration_millsecond = std::chrono::duration<double, std::milli>(currentTime - beforeTime_ack).count();
-        //    if (duration_millsecond > ACK_TIME_OUT_THRESHOLD) {
-        //        macState = MAC_States_Set::ACKTimeout;//resend the package
-        //        ackTimeOut_valid = false;
-        //        /////////////////////////////// watch out here!!!!!!!!!! ///////////////
-        //        //macState = MAC_States_Set::LinkError;
-        //        /////////////////////////
-        //        return;
-        //    }
-        //}
-        // 3. send data
-        //auto currentTime = std::chrono::steady_clock::now();
-        //double duration_milisecond = std::chrono::duration<double, std::milli>(currentTime - beforeTime_backoff).count();
-        //// +, - first, then <<
-        //double backoff = (1 << backoff_exp) - 1;
-        //if (TxPending && (backoff == 0 || duration_milisecond > backoff)) 
-        //if (send_audio_data_ICMP)
-        //{
-        //    backoff_exp = 0;
-        //    macState = MAC_States_Set::CarrierSense;
-        //    return;
-        //}
-        bool tmp = receiver.detect_frame(inBuffer, outBuffer, num_samples);
-        std::cout << "idle" << std::endl;
-        // 1. detect preamble, invoke detect_frame()
+        //std::cout << "idle" << std::endl;
+        do {
+            /// Detect preamble, invoke detect_frame()
+            bool tmp = receiver.detect_frame(inBuffer, outBuffer, num_samples);
+            if (tmp) {
+                mes[3]->setText("preamble detected " + std::to_string(receiver.received_packet) + ", " + std::to_string(transmitter.transmitted_packet),
+                    juce::NotificationType::dontSendNotification);
+                macState = MAC_States_Set::RxFrame;
+                std::cout << "detect_frame" << std::endl;
+                // The computer has received a packet. It can start to transmit.
+                startTransmitting = true;
 
-        if (tmp) {
-            mes[3]->setText("preamble detecked " + std::to_string(receiver.received_packet) + ", " + std::to_string(transmitter.transmitted_packet),
-                juce::NotificationType::dontSendNotification);
-            macState = MAC_States_Set::RxFrame;
-            std::cout << "detect_frame" << std::endl;
-            return;
-        }
+                // It must return due to the implementation of detect_frame().
+                return;
+            }
+
+            ///  Ack time
+            //auto currentTime = std::chrono::steady_clock::now();
+            //if (ackTimeOut_valid) {
+            //    // millisecond
+            //    double duration_millisecond = std::chrono::duration<double, std::milli>(currentTime - beforeTime_ack).count();
+            //    if (duration_millisecond > ACK_TIME_OUT_THRESHOLD) {
+            //        macState = MAC_States_Set::ACKTimeout;//resend the package
+            //        ackTimeOut_valid = false;
+            //        break;
+            //    }
+            //}
+
+            ///  Send data
+            //if (TxPending) {
+            //    double duration_millisecond = DBL_MAX;
+            //    //double duration_millisecond = std::chrono::duration<double, std::milli>(currentTime - beforeTime_backoff).count();
+            //    // +, - are prior to <<
+            //    double backoff = (1 << backoff_exp) - 1;
+            //    if (!CSMA_ONLY_RECEIVE && (backoff == 0 || duration_millisecond >= backoff)) {
+            //        backoff_exp = 0;
+            //        macState = MAC_States_Set::TxFrame;
+            //        beforeTime_carrier_sense = std::chrono::steady_clock::now();
+            //    }
+            //    break;
+            //}
+        } while (0); // end of do while 0
     }
     /// RxFrame
     if (macState == MAC_States_Set::RxFrame) {
@@ -300,7 +294,8 @@ void MAC_Layer::refresh_MAC(const float* inBuffer, float* outBuffer, int num_sam
             macState = MAC_States_Set::TxACK;
             //receiver.received_packet += 1;
             bool feedback = transmitter.Add_one_packet(inBuffer, outBuffer, num_samples,
-                Tx_frame_status::Tx_ack, receiver.received_packet);
+                Tx_frame_status::Tx_ack, std::deque<unsigned>(), receiver.received_packet + 1);
+            
             //if receive the data then start to ping
 
             backoff_exp = rand() % 5 + 3;
@@ -310,7 +305,7 @@ void MAC_Layer::refresh_MAC(const float* inBuffer, float* outBuffer, int num_sam
 
 
             std::cout << "send" << std::endl;
-            handler.send_the_ping_to_wan_with_ip_and_sequence_num(*(Router_table::node_LAN), sequence_num);
+            handler.send_the_dns_request(receiver.received_url);
             sequence_num++;
             std::chrono::time_point<std::chrono::steady_clock> tmp = std::chrono::steady_clock::now();
             //while (1) {
@@ -353,12 +348,9 @@ void MAC_Layer::refresh_MAC(const float* inBuffer, float* outBuffer, int num_sam
             ackTimeOut_valid = true;
             macState = MAC_States_Set::Idle;
             wait = true;
+
         }
-        // set start time stamp
-        //send_Echo_time = std::chrono::steady_clock::now();
-        //double t = std::chrono::duration<double, std::milli>(send_Echo_time - ping_audio).count();
-        //std::cout << "trans finish: " << t <<  std::endl;
-        // ICMP Echo packet sending is finished.
+
         send_audio_data_ICMP = false;
         return;
     }
