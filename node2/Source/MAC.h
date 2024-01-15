@@ -51,7 +51,10 @@ public:
         send_audio_data_ICMP = false;
         sequence_num = 15;
         is_host = true;
-        start_dns = false;
+        start_ping = false;
+        ping_ip = 0;
+        trans_id = 0;
+
     }
 
     //void reset_receiving_info();
@@ -119,9 +122,11 @@ public:
     double accumulate_buffer = 0;
     unsigned int sequence_num;
     std::vector<unsigned char> char_buffer;
-    bool start_dns = false;
+    bool start_ping = false;
     bool is_host = true;
     unsigned int query_ID = 69;
+    uint32_t ping_ip;
+    uint16_t trans_id;
 };
 void KeepSilence(const float* inBuffer, float* outBuffer, int num_samples) {
     for (int i = 0; i < num_samples; i++) {
@@ -177,45 +182,48 @@ void MAC_Layer::refresh_MAC(const float* inBuffer, float* outBuffer, int num_sam
     else if (macState == MAC_States_Set::ICMP_sniff) {
 
         ans = -1;
-        int tmp = 0;
-        //tmp = ++tmp % 10;
-        handler.run(ans, ip, icmp);
-        //if you want to inverse and send,
-        //handler.Inverse_the_detected_packet_data();
-        //handler.set_the_detected_into_send_packet();
-        //handler.send_packet(1);
-        //if just forwarding
-        //handler.set_the_detected_into_send_packet();
-        //handler.send_packet(1);
-        // request
-        std::cout << "sniffing" << std::endl;
-        if (ans == -1) {
-            std::cout << "no packet " << std::flush;
-        }
-        if (ans == 5) {
-            send_audio_data_ICMP = true;
-            macState = MAC_States_Set::TxFrame;
-            //bool feedback = transmitter.Add_one_packet(inBuffer, outBuffer, num_samples,
-            //    Tx_frame_status::Tx_data);
-            std::cout << "go" << std::endl;
-            ping_audio = std::chrono::steady_clock::now();
-            return;
-        }
-        if (ans == 8) {
-            handler.Inverse_the_detected_packet_data();
-            handler.set_the_detected_into_send_packet();
-            handler.send_packet(1);
-            std::cout << "reply" << std::endl;
-            macState == MAC_States_Set::Idle;
-            return;
-        }
+        ans = handler.detect_response();
 
-        return;
+        if (ans == 1) {
+            ENTERING;
+            uint32_t response_ip = *(uint32_t *)(&(handler.detected_data[26]));
+            for (int i = 0; i < 4; i++) {
+                std::cout << (uint8_t)((response_ip >> (8 * (4 - i))) && (0xff)) << " ";
+            }
+            std::cout << "check" << std::endl;
+            if (response_ip == ping_ip) {
+                macState = MAC_States_Set::TxACK;
+                //receiver.received_packet += 1;
+                bool feedback = transmitter.Add_one_packet(inBuffer, outBuffer, num_samples,
+                    Tx_frame_status::Tx_ack, std::deque<unsigned>(), receiver.received_packet + 1);
+                response_ip = 0;
+                trans_id = 0;
+
+            }
+        }
+        else if (ans == 2) {
+            uint16_t response_id = *(uint16_t *)(&(handler.detected_data [42]));
+            if (response_id == trans_id) {
+                //response the ip
+                u_char *data = handler.detected_data;
+                int index = 54;
+                while (data[index] != 0x00) {
+                    uint8_t count = data[index];
+                    index += count+1;
+                }
+                ping_ip = *(uint32_t *)(handler.detected_data + index+17);
+                for (int i = 0; i < 4; i++) {
+                    std::cout << ((ping_ip >> (8 * (4 - i))) && (0xff))<<" ";
+                }
+            }
+            handler.send_the_ping_to_wan_with_ip_and_sequence_num(ping_ip, get_Rand(0, 100));
+        }
     }
     else if (macState == MAC_States_Set::Idle) {
         //std::cout << "idle" << std::endl;
         do {
             /// Detect preamble, invoke detect_frame()
+     
             bool tmp = receiver.detect_frame(inBuffer, outBuffer, num_samples);
             if (tmp) {
                 mes[3]->setText("preamble detected " + std::to_string(receiver.received_packet) + ", " + std::to_string(transmitter.transmitted_packet),
@@ -291,10 +299,8 @@ void MAC_Layer::refresh_MAC(const float* inBuffer, float* outBuffer, int num_sam
             return;
         }
         case Rx_Frame_Received_Type::valid_data:
-            macState = MAC_States_Set::TxACK;
+            macState = MAC_States_Set::ICMP_sniff;
             //receiver.received_packet += 1;
-            bool feedback = transmitter.Add_one_packet(inBuffer, outBuffer, num_samples,
-                Tx_frame_status::Tx_ack, std::deque<unsigned>(), receiver.received_packet + 1);
             
             //if receive the data then start to ping
 
@@ -305,7 +311,7 @@ void MAC_Layer::refresh_MAC(const float* inBuffer, float* outBuffer, int num_sam
 
 
             std::cout << "send" << std::endl;
-            handler.send_the_dns_request(receiver.received_url);
+           trans_id= handler.send_the_dns_request(receiver.received_url);
             sequence_num++;
             std::chrono::time_point<std::chrono::steady_clock> tmp = std::chrono::steady_clock::now();
             //while (1) {

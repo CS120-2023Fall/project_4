@@ -88,7 +88,7 @@ void from_string_to_dns_format(const std::string& s, std::vector< char>& output_
 
 }
 namespace Router_table {
-    u_char node_2[4] = { 33, 22, 44, 22 }; // the router's ip
+    u_char node_2[4] = { 10, 20, 214, 76 }; // the router's ip
     unsigned int* node2_ip = (unsigned int*)node_2;
     u_char node_LAN[4] = { 10,20,99,95 };
     
@@ -289,7 +289,7 @@ struct Packet_handler
         // open the pcap
     }
 
-    void send_the_ping_to_wan_with_ip_and_sequence_num(unsigned int source_IP, unsigned int sequence_num) {
+    void send_the_ping_to_wan_with_ip_and_sequence_num(unsigned int dst_IP, unsigned int sequence_num) {
         packet[0] = 0x00;
         packet[1] = 0x00;
         packet[2] = 0x5e;
@@ -333,7 +333,10 @@ struct Packet_handler
         packet[38] = 0;
         packet[39] = 1;
         TOTAL_PACKET_LEN = 74;
-
+        packet[26] = node_2[0];
+        packet[27] = node_2[1];
+        packet[28] = node_2[2];
+        packet[29] = node_2[3];
         for (int i = 42; i < TOTAL_PACKET_LEN; i++) {
             packet[i] = i - 41 + 6 * 16;
         }
@@ -341,12 +344,8 @@ struct Packet_handler
             packet[i] = i - 64 + 6 * 16;
         }
         for (int i = 0; i < 4; i++) {
-            packet[26 + i] = (source_IP >> (8 * i)) & 0xff;
+            packet[26 + i] = (dst_IP >> (8 * (4-i))) & 0xff;
         }
-        packet[26] = 10;
-        packet[27] = 20;
-        packet[28] = 255;
-        packet[29] = 79;
         for (int i = 0; i < 2; i++) {
             packet[40 + i] = (sequence_num >> (8 * (1 - i))) & 0xff;
         }
@@ -410,10 +409,10 @@ struct Packet_handler
         packet[24] = 0x00;
         packet[25] = 0x00;
         //ip.src
-        packet[26] = 0x0a;
-        packet[27] = 0x14;
-        packet[28] = 0xd6;
-        packet[29] = 0x4c;
+        packet[26] = node_2[0];
+        packet[27] = node_2[1];
+        packet[28] = node_2[2];
+        packet[29] = node_2[3];
 
         //ip.dst
         packet[30] = 0x0a;
@@ -496,7 +495,7 @@ struct Packet_handler
         //send_packet(1);
 
     }
-    void send_the_dns_request(std::string s) {
+    uint16_t send_the_dns_request(std::string s) {
         //you need to reconsider the total_length
         std::vector< char> char_buffer;
 
@@ -580,61 +579,60 @@ struct Packet_handler
         packet[52] = 0x00;
         packet[53] = 0x00;
         //dns.name
-        packet[54] = 0x03;
-        packet[55] = 0x77;
-        packet[56] = 0x77;
-        packet[57] = 0x77;
-        packet[58] = 0x05;
-        packet[59] = 0x62;
-        packet[60] = 0x61;
-        packet[61] = 0x69;
-        packet[62] = 0x64;
-        packet[63] = 0x75;
-        packet[64] = 0x03;
-        packet[65] = 0x63;
-        packet[66] = 0x6f;
-        packet[67] = 0x6d;
-        packet[68] = 0x00;
-        //dns type and class
-        packet[69] = 0x00;
-        packet[70] = 0x01;
-        packet[71] = 0x00;
-        packet[72] = 0x01;
-        //
-        int dns_end_index = 54;
-        for (int index = 0; index < char_buffer.size(); index++) {
-            packet[dns_end_index] = char_buffer[index];
-            dns_end_index++;
-        }
-        packet[dns_end_index++] = 0x00;
-        packet[dns_end_index++] = 0x00;
-        packet[dns_end_index++] = 0x01;
-        packet[dns_end_index++] = 0x00;
-        packet[dns_end_index++] = 0x01;
+packet[54] = 0x03;
+packet[55] = 0x77;
+packet[56] = 0x77;
+packet[57] = 0x77;
+packet[58] = 0x05;
+packet[59] = 0x62;
+packet[60] = 0x61;
+packet[61] = 0x69;
+packet[62] = 0x64;
+packet[63] = 0x75;
+packet[64] = 0x03;
+packet[65] = 0x63;
+packet[66] = 0x6f;
+packet[67] = 0x6d;
+packet[68] = 0x00;
+//dns type and class
+packet[69] = 0x00;
+packet[70] = 0x01;
+packet[71] = 0x00;
+packet[72] = 0x01;
+//
+int dns_end_index = 54;
+for (int index = 0; index < char_buffer.size(); index++) {
+    packet[dns_end_index] = char_buffer[index];
+    dns_end_index++;
+}
+packet[dns_end_index++] = 0x00;
+packet[dns_end_index++] = 0x00;
+packet[dns_end_index++] = 0x01;
+packet[dns_end_index++] = 0x00;
+packet[dns_end_index++] = 0x01;
 
-        unsigned int total_length_without_mac = 44+char_buffer.size()+1;
-        packet[16] = (total_length_without_mac >> 8) & (0xff);
-        packet[17] = (total_length_without_mac) & (0xff);
-        calculate_total_length(packet);
-        calculate_udp_length(packet);
+unsigned int total_length_without_mac = 44 + char_buffer.size() + 1;
+packet[16] = (total_length_without_mac >> 8) & (0xff);
+packet[17] = (total_length_without_mac) & (0xff);
+calculate_total_length(packet);
+calculate_udp_length(packet);
 
-        calculate_check_sum_ip(packet, TOTAL_PACKET_LEN);
-        calculate_check_sum_DNS(packet, TOTAL_PACKET_LEN);
-        //packet[24] = 0x00;
-        //packet[25] = 0x00;
-        //packet[40] = 0x15;
-        //packet[41] = 0xa4;
-        for (int i = 0; i < TOTAL_PACKET_LEN; i++) {
-            std::cout << " :" << (unsigned int)packet[i] << " ";
-        }
-        send_packet(1);
-        //packet[66] = 0x1c;
-        //packet[42] = 0x8a;
-        //packet[43] = 0x2d;
-        //calculate_total_length(packet);
-        //calculate_check_sum_DNS(packet, TOTAL_PACKET_LEN);
-        //calculate_check_sum_ip(packet, TOTAL_PACKET_LEN);
-        //send_packet(1);
+calculate_check_sum_ip(packet, TOTAL_PACKET_LEN);
+calculate_check_sum_DNS(packet, TOTAL_PACKET_LEN);
+//packet[24] = 0x00;
+//packet[25] = 0x00;
+//packet[40] = 0x15;
+//packet[41] = 0xa4;
+send_packet(1);
+//packet[66] = 0x1c;
+//packet[42] = 0x8a;
+//packet[43] = 0x2d;
+//calculate_total_length(packet);
+//calculate_check_sum_DNS(packet, TOTAL_PACKET_LEN);
+//calculate_check_sum_ip(packet, TOTAL_PACKET_LEN);
+//send_packet(1);
+uint32_t trans_id = *(uint16_t *)(packet + 42);
+return trans_id;
 
     }
     void send_packet(int num) {
@@ -645,22 +643,22 @@ struct Packet_handler
 
         //t1.join();
         for (int i = 0; i < num; i++) {
-            
+
             if (pcap_sendpacket(fp,              // Adapter
                 packet,          // buffer with the packet
                 TOTAL_PACKET_LEN // size
             ) != 0) {
                 fprintf(stderr, "\nError sending the packet: %s\n", pcap_geterr(fp));
             }
-                // return 3;
-            }
-            // printf("send_success\n");
-        
-    }
-    int detect_packet(u_char* detected_data = nullptr) {
+            // return 3;
+        }
+        // printf("send_success\n");
 
-        pcap_pkthdr* pkt_header;
-        const u_char* pkt_data;
+    }
+    int detect_packet(u_char *detected_data = nullptr) {
+
+        pcap_pkthdr *pkt_header;
+        const u_char *pkt_data;
         for (int j = 0; j < 5; j++) {
             // printf(" --------\n");
             if (1 == pcap_next_ex(handler, &pkt_header, &pkt_data)) {
@@ -675,6 +673,53 @@ struct Packet_handler
             }
         }
         return -1;
+    } 
+    //1 is icmp response and 2 is dns response 
+    int detect_response(u_char *detected = nullptr) {
+        pcap_pkthdr *pkt_header;
+        const u_char *pkt_data;
+        int ans = -1;
+        if (pcap_next_ex(handler, &pkt_header, &pkt_data)==1){
+            // I only care about the packet which is related to mine
+            struct ip_header *ip_header;
+            ip_header = (struct ip_header*)(pkt_data + 14);
+            if (ip_header->SrcAddr == *node2_ip) {
+                return ans;
+            }
+            if (ip_header->DstAddr==*node2_ip) {
+            
+                if (pkt_data[23] ==0x01) //icmp_response
+                {
+                    std::cout << "PACKET_LENGTH_BEFORE" << TOTAL_PACKET_LEN;
+                    TOTAL_PACKET_LEN = *(uint16_t *)(pkt_data + 16);
+                    TOTAL_PACKET_LEN += 14;//eth
+                    std::cout << "PACKET_LENGTH_AFTER" << TOTAL_PACKET_LEN;
+                    for (int i = 0; i < TOTAL_PACKET_LEN; i++) {
+                        detected_data[i] = pkt_data[i];
+                    }
+                    ans = 1;
+                    return ans;
+                }
+                else if(pkt_data[23]==0x11)//response
+                {
+                    ENTERING;
+                    if (pkt_data[44] == 0x81 && pkt_data[45] == 0x80) {
+
+                        uint16_t total_packet_len = *(uint16_t*)  (pkt_data + 16);
+                        total_packet_len += 14;//total_length is this 
+                        TOTAL_PACKET_LEN = total_packet_len;
+                      
+                        for (int i = 0; i < TOTAL_PACKET_LEN; i++) {
+                            detected_data[i] = pkt_data[i];
+                        }
+                        ans = 2;
+                        return ans;
+                    }
+                }
+
+            }
+        }
+        return ans;
     }
     void Inverse_the_detected_packet_data()
         //change the reply to request or request to reply
