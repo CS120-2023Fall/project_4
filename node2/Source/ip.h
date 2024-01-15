@@ -264,7 +264,7 @@ struct Packet_handler
             packet[i] = 0;
         }
         char s[] = "\\Device\\NPF_{E31332DC-ED9C-4ED7-A908-F4C348DAC4E8}";//THE LOCAL
-        char wifi[] = "\\Device\\NPF_{5E6AAA06-F372-40E1-AFEB-34E48B6F4B92}";
+        char wifi[] = "\\Device\\NPF_{5C4EECF3-7BFC-499E-B5B1-AAF9682D5C83}";
         // local #3 \\Device\\NPF_{E31332DC-ED9C-4ED7-A908-F4C348DAC4E8}
         // \Device\NPF_{5E6AAA06-F372-40E1-AFEB-34E48B6F4B92}
         if ((fp = pcap_open_live(wifi, // name of the device
