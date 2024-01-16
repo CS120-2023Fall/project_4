@@ -130,6 +130,7 @@ public:
     uint16_t trans_id;
     bool start_dns = false;
     u_char ip_4[4];
+    u_char transcation_id[2];
 };
 void KeepSilence(const float* inBuffer, float* outBuffer, int num_samples) {
     for (int i = 0; i < num_samples; i++) {
@@ -181,7 +182,9 @@ void MAC_Layer::refresh_MAC(const float* inBuffer, float* outBuffer, int num_sam
             start_dns = false;
             std::cout <<"start_dns" <<receiver.received_url<<std::endl;
             trans_id = handler.send_the_dns_request(receiver.received_url);
-            std::cout << "start a dns trans with trans_id:" << ((trans_id >> 8) & (0xff)) << " " << (trans_id & (0xff)) << std::endl;
+            transcation_id[0] = packet[42];
+            transcation_id[1] = packet[43];
+            std::cout << "start a dns trans with trans_id:" << transcation_id[0]<< " " << transcation_id[1] << std::endl;
         }
         while (ans == -1) {
             ans = handler.detect_response();
@@ -203,15 +206,22 @@ void MAC_Layer::refresh_MAC(const float* inBuffer, float* outBuffer, int num_sam
                     for (int i = 0; i < 4; i++) {
                         ip_4[i] = 0;
                     }
+                    transcation_id[0] = 0;
+                    transcation_id[1] = 0;
+                    receiver.received_url = "";
+                    start_dns = true;
                 }
             }
             else if (ans == 2) {
-                uint16_t response_id = *(uint16_t *)((handler.detected_data + 42));
-                std::cout << "capture a dns response with response_id:" << ((response_id >> 8) & (0xff)) << " " << (response_id & (0xff)) << std::endl;
-                if (response_id == trans_id) {
+                u_char response_id[] = { handler.detected_data[42],handler.detected_data[43] };
+              
+                std::cout << "capture a dns response with response_id:" <<(unsigned int) response_id[0] << " " <<(unsigned int) (response_id [1] & (0xff)) << std::endl;
+                std::cout << "the packet I want to reply" << (unsigned int)transcation_id[0] << " " << (unsigned int)(transcation_id[1] & (0xff)) << std::endl;
+                if (response_id[0] == transcation_id[0]&&(response_id[1]==transcation_id[1])) {
                     //response the ip
                     u_char *data = handler.detected_data;
                     int index = 54;
+                   std::cout << "the current " << index + 17 << std::endl;
                     while (data[index] != 0x00) {
                         uint8_t count = data[index];
                         index += count + 1;

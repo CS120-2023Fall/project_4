@@ -705,7 +705,7 @@ return trans_id;
                 else if(pkt_data[23]==0x11)//response
                 {
                     ENTERING;
-                    if (pkt_data[44] == 0x81 && pkt_data[45] == 0x80) {
+                    if (pkt_data[44] == 0x84 && pkt_data[45] == 0x00) {
 
                         uint16_t total_packet_len = *(uint16_t*)  (pkt_data + 16);
                         total_packet_len += 14;//total_length is this 
