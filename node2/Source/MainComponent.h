@@ -108,6 +108,7 @@ public:
           juceState = juce_States_Set::STOP;
 
           mac.STOP();
+          mac.Start();
           start_csma = false;
           mac.macState = MAC_Layer::MAC_States_Set::Idle;
 

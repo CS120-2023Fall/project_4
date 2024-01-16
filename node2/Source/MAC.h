@@ -54,6 +54,7 @@ public:
         start_ping = false;
         ping_ip = 0;
         trans_id = 0;
+        start_dns = false;
 
     }
 
@@ -127,6 +128,8 @@ public:
     unsigned int query_ID = 69;
     uint32_t ping_ip;
     uint16_t trans_id;
+    bool start_dns = false;
+    u_char ip_4[4];
 };
 void KeepSilence(const float* inBuffer, float* outBuffer, int num_samples) {
     for (int i = 0; i < num_samples; i++) {
@@ -166,57 +169,70 @@ void MAC_Layer::refresh_MAC(const float* inBuffer, float* outBuffer, int num_sam
     //    }
     //    
     //}
+  
     if (macState == MAC_States_Set::ICMP_ping_wan)
     {
 
     }
-    if (macState == MAC_States_Set::ICMP_send) {
-        ////handler.Inverse_the_detected_packet_data();
-        handler.set_the_detected_into_send_packet();
-        handler.send_packet(1);
-
-        macState = MAC_States_Set::ICMP_sniff;
-
-        return;
-    }
     else if (macState == MAC_States_Set::ICMP_sniff) {
 
         ans = -1;
-        ans = handler.detect_response();
-
-        if (ans == 1) {
-            ENTERING;
-            uint32_t response_ip = *(uint32_t *)(&(handler.detected_data[26]));
-            for (int i = 0; i < 4; i++) {
-                std::cout << (uint8_t)((response_ip >> (8 * (4 - i))) && (0xff)) << " ";
-            }
-            std::cout << "check" << std::endl;
-            if (response_ip == ping_ip) {
-                macState = MAC_States_Set::TxACK;
-                //receiver.received_packet += 1;
-                bool feedback = transmitter.Add_one_packet(inBuffer, outBuffer, num_samples,
-                    Tx_frame_status::Tx_ack, std::deque<unsigned>(), receiver.received_packet + 1);
-                response_ip = 0;
-                trans_id = 0;
-
-            }
+        if (start_dns) {
+            start_dns = false;
+            std::cout <<"start_dns" <<receiver.received_url<<std::endl;
+            trans_id = handler.send_the_dns_request(receiver.received_url);
+            std::cout << "start a dns trans with trans_id:" << ((trans_id >> 8) & (0xff)) << " " << (trans_id & (0xff)) << std::endl;
         }
-        else if (ans == 2) {
-            uint16_t response_id = *(uint16_t *)(&(handler.detected_data [42]));
-            if (response_id == trans_id) {
-                //response the ip
-                u_char *data = handler.detected_data;
-                int index = 54;
-                while (data[index] != 0x00) {
-                    uint8_t count = data[index];
-                    index += count+1;
+        while (ans == -1) {
+            ans = handler.detect_response();
+          
+            if (ans == 1) {
+        
+                u_char response_ip[] = { handler.detected_data[26] ,handler.detected_data[27],handler.detected_data[28],handler.detected_data[29] };
+                for (int i = 0; i < 4; i ++ ) {
+                    if (response_ip[i] != ip_4[i]) {
+                        ans = -1;
+                        break;//not same I dont care
+                    }
                 }
-                ping_ip = *(uint32_t *)(handler.detected_data + index+17);
-                for (int i = 0; i < 4; i++) {
-                    std::cout << ((ping_ip >> (8 * (4 - i))) && (0xff))<<" ";
+                if (ans != -1) {
+                    macState = MAC_States_Set::TxACK;
+                    //receiver.received_packet += 1;
+                    bool feedback = transmitter.Add_one_packet(inBuffer, outBuffer, num_samples,
+                        Tx_frame_status::Tx_ack, std::deque<unsigned>(), receiver.received_packet + 1);
+                    for (int i = 0; i < 4; i++) {
+                        ip_4[i] = 0;
+                    }
                 }
             }
-            handler.send_the_ping_to_wan_with_ip_and_sequence_num(ping_ip, get_Rand(0, 100));
+            else if (ans == 2) {
+                uint16_t response_id = *(uint16_t *)((handler.detected_data + 42));
+                std::cout << "capture a dns response with response_id:" << ((response_id >> 8) & (0xff)) << " " << (response_id & (0xff)) << std::endl;
+                if (response_id == trans_id) {
+                    //response the ip
+                    u_char *data = handler.detected_data;
+                    int index = 54;
+                    while (data[index] != 0x00) {
+                        uint8_t count = data[index];
+                        index += count + 1;
+                    }
+                    std::cout << "the current "<<index+17 << std::endl;
+                    ping_ip = *(uint32_t *)(handler.detected_data + index + 17);
+            
+                    u_char ipv4[] = {handler.detected_data[index + 17],handler.detected_data[index + 18] ,handler.detected_data[index + 19],handler.detected_data[index + 20]};
+                    for (int i = 0; i < 4; i++) {
+                        ip_4[i] = ipv4[i];
+                   }
+                    std::cout<<std::endl;
+                    std::cout << "ipv4";
+                    for (int i = 0; i < 4; i++) {
+                        std::cout << " " << (unsigned int)ip_4[i] << " ";
+                    }
+                    handler.send_the_ping_to_wan_with_ip_and_sequence_num(ip_4, get_Rand(0, 100));
+                    ans = -1;
+                }
+                
+            }
         }
     }
     else if (macState == MAC_States_Set::Idle) {
@@ -309,11 +325,9 @@ void MAC_Layer::refresh_MAC(const float* inBuffer, float* outBuffer, int num_sam
             mes[1]->setText("Packet received: " + std::to_string(receiver.received_packet), juce::dontSendNotification);
             /////////////////////// delete me 
 
-
+            start_dns = true;
             std::cout << "send" << std::endl;
-           trans_id= handler.send_the_dns_request(receiver.received_url);
-            sequence_num++;
-            std::chrono::time_point<std::chrono::steady_clock> tmp = std::chrono::steady_clock::now();
+        
             //while (1) {
             //    std::chrono::time_point<std::chrono::steady_clock> t1 = std::chrono::steady_clock::now();
             //    double duration = std::chrono::duration<double, std::milli>(t1 - tmp).count();
