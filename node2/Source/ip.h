@@ -12,6 +12,7 @@
 #define ETHERTYPE_IP 0x0800 /* IP */
 #include <tchar.h>
 #include<thread>
+#include <omp.h>
 #include<ctime>
 #include <cstdlib>
 int get_Rand(int min, int max) {
@@ -88,19 +89,21 @@ void from_string_to_dns_format(const std::string& s, std::vector< char>& output_
 
 }
 namespace Router_table {
-    u_char node_2[4] = { 10, 20, 214, 76 }; // the router's ip
+    u_char node_2[4] = { 10, 20, 219, 215 }; // the router's ip
     unsigned int* node2_ip = (unsigned int*)node_2;
     u_char node_LAN[4] = { 10,20,99,95 };
     
-    u_char node_3[4] = { 66,55,44,33 };
+    u_char node_3[4] = { 192,168,137,42 };//local wan,use npcap
     u_char node_4[4] = { 1,1,1,1 };//node 4 is wan
-    u_char node_1[4] = { 11, 44, 22, 33 };
-  
+    u_char node_1[4] = { 172, 18, 22, 33 };//local wan you should use the asio
+    u_char node2_virtual[4] = { 192,168,0,81 };
+   
     unsigned int* node3_ip = (unsigned int*)node_3;
     unsigned int* node4_ip = (unsigned int*)node_4;
 
     unsigned int* node_lan = (unsigned int*)node_LAN;
     unsigned int* node1_ip = (unsigned int*)node_1;
+    unsigned int* node2_virtual_ip = (unsigned int*)node2_virtual;
 }
 using namespace Router_table;
 void calculate_total_length(const u_char* packetData) {
@@ -139,6 +142,39 @@ void calculate_check_sum_ICMP(u_char* packetData, unsigned int packet_len) {
     cksum = ~cksum;
     *(uint16_t*)(packetData + 36) = cksum;
 }
+void calculate_check_sum_ICMP_virtual(u_char* packetData, unsigned int packet_len) {
+    uint32_t cksum = 0;
+    *(uint16_t*)(packetData + 26) = cksum;
+    for (int i = 24; i < packet_len; i += 2) {
+        cksum += *(uint16_t*)(packetData + i);
+    }
+    while (cksum >> 16) {
+        cksum = (cksum & 0xffff) + (cksum >> 16);
+    }
+    cksum = ~cksum;
+    *(uint16_t*)(packetData + 26) = cksum;
+}
+void calculate_check_sum_ip_virtual(u_char* packetData, unsigned int packet_len) {
+    uint32_t cksum = 0;
+    *(uint16_t*)(packetData + 14) = cksum;
+    for (int i = 4; i < 4 + 4 * (packetData[4] & 0xf); i += 2) {
+        cksum += *(uint16_t*)(packetData + i);
+    }
+    while (cksum >> 16) {
+        cksum = (cksum & 0xffff) + (cksum >> 16);
+    }
+    cksum = ~cksum;
+    *(uint16_t*)(packetData + 14) = cksum;
+}
+void calculate_total_length_virtaul(const u_char* packetData) {
+    unsigned int byte0;
+    unsigned int byte1;
+    byte1 = (unsigned int)packetData[6];
+    byte0 = (unsigned int)packetData[7];
+    TOTAL_PACKET_LEN = byte1 * 256 + byte0 + 4;//14 is mac
+}
+
+
 void calculate_check_sum_DNS(u_char* packetData, unsigned int packet_len) 
 {
     uint32_t cksum = 0;
@@ -160,8 +196,6 @@ void calculate_check_sum_DNS(u_char* packetData, unsigned int packet_len)
     *(uint16_t*)(packetData + 40) = cksum;
 }
 int PrintIPHeader(const u_char* packetData);
-// ����ICMP���ݰ����ڽ������Ҫͬ����Ҫ����������·���IP��, Ȼ���ٸ���ICMP���ͺŽ���,
-// ���õ����ͺ�Ϊ`type 8`�������ŷ��ͺͽ������ݰ���ʱ�����
 int PrintICMPHeader(const u_char* packetData) {
 
     struct icmp_header* icmp_protocol;
@@ -175,8 +209,6 @@ int PrintICMPHeader(const u_char* packetData) {
     int recv_time = icmp_protocol->recv_time;
     printf("this is:%c,%d\n", icmp_protocol->type, icmp_protocol->type);
     if (type == 0 || type == 8) {
-        // printf("����ʱ���: %d --> ����ʱ���: %d --> ����ʱ���: %d ����: ",
-        // init_time, send_time, recv_time);
 
         switch (type) {
         case 0: {
@@ -197,10 +229,12 @@ int PrintICMPHeader(const u_char* packetData) {
     }
     return -1;
 }
-    u_char packet[10000];
+    u_char *packet=new u_char[1000];
 struct Packet_handler 
 {
-    Packet_handler() { Initialize()  ;
+    Packet_handler() { 
+        
+   Initialize()  ;
     srand(time(0));
     }
     void Initialize() {
@@ -214,7 +248,7 @@ struct Packet_handler
         for (auto d = alldevs; d != NULL; d = d->next) {
             printf("%s %s\n", d->name, d->description);
             count++;
-            if (count == 5) {
+            if (count == 10) {
                 device = d;
                 break;
             }
@@ -263,11 +297,13 @@ struct Packet_handler
         for (int i = 38; i < 1000; i++) {
             packet[i] = 0;
         }
-        char s[] = "\\Device\\NPF_{E31332DC-ED9C-4ED7-A908-F4C348DAC4E8}";//THE LOCAL
-        char wifi[] = "\\Device\\NPF_{5C4EECF3-7BFC-499E-B5B1-AAF9682D5C83}";
+        char wifi[] = "\\Device\\NPF_{5C4EECF3-7BFC-499E-B5B1-AAF9682D5C83}";//THE WIFI
+        char s[] = "\\Device\\NPF_{200730C5-504B-4B79-ABAB-2BF3BAFC5184}";//THE LOCAL
+        char v[]="\\Device\\NPF_Loopback";
         // local #3 \\Device\\NPF_{E31332DC-ED9C-4ED7-A908-F4C348DAC4E8}
         // \Device\NPF_{5E6AAA06-F372-40E1-AFEB-34E48B6F4B92}
-        if ((fp = pcap_open_live(wifi, // name of the device
+
+        if ((handler = pcap_open_live(wifi, // name of the device
             65536, // portion of the packet to capture. It
             // doesn't matter in this case
             1, // promiscuous mode (nonzero means promiscuous)
@@ -277,8 +313,17 @@ struct Packet_handler
             fprintf(stderr,
                 "\nUnable to open the adapter. %s is not supported by WinPcap\n");
         }
-        if (NULL == (handler = pcap_open_live(
-            wifi, 65536, // portion of the packet to capture.
+        if (NULL == (handler_2 = pcap_open_live(
+            s, 65536, // portion of the packet to capture.
+            // It doesn't matter in this case
+            1,   // promiscuous mode (nonzero means promiscuous)
+            100, // read timeout
+            errbuf))) {
+            // ���ý��ܵİ���СΪ65535�������Խ������д�С�İ�
+            printf("err in pcap_open : %s", errbuf);
+        }
+        if (NULL == (fp = pcap_open_live(
+            v, 65536, // portion of the packet to capture.
             // It doesn't matter in this case
             1,   // promiscuous mode (nonzero means promiscuous)
             100, // read timeout
@@ -287,6 +332,26 @@ struct Packet_handler
             printf("err in pcap_open : %s", errbuf);
         }
         // open the pcap
+    }
+    void Inverse_the_virtual_and_send() {
+        u_char src[] = { packet[44] ,packet[45],packet[46],packet[47]};
+        u_char dst[] = { packet[48],packet[49],packet[50],packet[51] };
+        packet[44] = dst[0];
+        packet[45] = dst[1];
+        packet[46] = dst[2];
+        packet[47] = dst[3];
+       //
+        packet[48] = src[0];
+        packet[49] = src[1];
+        packet[50] = src[2];
+        packet[51] = src[3];
+        packet[52] = 0x00;
+        calculate_total_length_virtaul(packet);
+        calculate_check_sum_ip_virtual(packet,TOTAL_PACKET_LEN);
+        calculate_check_sum_ICMP_virtual(packet, TOTAL_PACKET_LEN);
+        send_virtual_packet();
+
+
     }
 
     void send_the_ping_to_wan_with_ip_and_sequence_num(unsigned int dst_IP, unsigned int sequence_num) {
@@ -495,6 +560,79 @@ struct Packet_handler
         //send_packet(1);
 
     }
+    void set_the_wan() {
+        packet[0] = 0x00;
+        packet[1] = 0x00;
+        packet[2] = 0x5e;
+        packet[3] = 0x00;
+        packet[4] = 0x01;
+        packet[5] = 0x01;//src may change
+
+        packet[6] = 0x4c;
+        packet[7] = 0x79;
+        packet[8] = 0x6e;
+        packet[9] = 0xbf;
+        packet[10] = 0xa1;
+        packet[11] = 0x5d;
+  
+        //
+        packet[26] = node_2[0];
+        packet[27] = node_2[1];
+        packet[28] = node_2[2];
+        packet[29] = node_2[3];
+        //set the source
+    }
+    void set_the_lan() {
+        packet[0] = 0xc2;
+        packet[1] = 0x2d;
+        packet[2] = 0xc6;
+        packet[3] = 0x11;
+        packet[4] = 0x99;
+        packet[5] = 0xd3;
+        packet[6] = 0x4e;
+        packet[7] = 0x79;
+        //
+        packet[8] = 0x6e;
+        packet[9] = 0xbf;
+        packet[10] = 0xa1;
+        packet[11] = 0x5d;
+        //
+        packet[12] = 0x08;
+        packet[13] = 0x00;
+        packet[14] = 0x45;
+        packet[15] = 0x00;
+        packet[16] = 0x00;
+
+        packet[17] =32;//length
+        //packet[18] = 0xdc;
+        //packet[19] = 0x5b;//id
+        packet[20] = 0x00;
+        packet[21] = 0x00;
+        packet[22] = 0x40;
+        packet[23] = 0x01;
+        //checksum
+        packet[24] = 0x00;
+        packet[25] = 0x00;
+
+        packet[26] = node_3[0];
+        packet[27] = node_3[1];
+        packet[28] = node_3[2];
+        packet[29] = 1;//src
+        packet[30] = node_3[0];
+        packet[31] = node_3[1];
+        packet[32] = node_3[2];
+        packet[33] = node_3[3];
+        //
+        packet[34] = 0x08;
+        packet[35] = 0x00;
+        //checksum
+        packet[36] = 0x00;
+        packet[37] = 0x00;
+        //packet[40] = 0x00;
+        //packet[41] = get_Rand(10, 50);
+        //you should add the data and recalculate 
+
+    }
     uint16_t send_the_dns_request(std::string s) {
         //you need to reconsider the total_length
         std::vector< char> char_buffer;
@@ -539,16 +677,17 @@ struct Packet_handler
         packet[24] = 0x00;
         packet[25] = 0x00;
         //ip.src
-        packet[26] = 0x0a;
-        packet[27] = 0x14;
-        packet[28] = 0xd6;
-        packet[29] = 0x4c;
+        packet[26] = node_2[0];
+        packet[27] = node_2[1];
+        packet[28] = node_2[2];
+        packet[29] = node_2[3];
+
 
         //ip.dst
-        packet[30] = 0x0a;
-        packet[31] = 0x0f;
-        packet[32] = 0x2c;
-        packet[33] = 0x0b;
+        packet[30] = 0x08;
+        packet[31] = 0x08;
+        packet[32] = 0x04;
+        packet[33] = 0x04;
         //src port
         packet[34] = 0xc0;
         packet[35] = 0xad;
@@ -635,6 +774,32 @@ uint32_t trans_id = *(uint16_t *)(packet + 42);
 return trans_id;
 
     }
+
+    void send_wifi_packet() {
+        if (pcap_sendpacket(handler,              // Adapter
+            packet,          // buffer with the packet
+            TOTAL_PACKET_LEN // size
+        ) != 0) {
+            fprintf(stderr, "\nError sending the packet: %s\n", pcap_geterr(handler));
+        }
+    }
+    void send_lan_packet() {
+        if (pcap_sendpacket(handler_2,              // Adapter
+            packet,          // buffer with the packet
+            TOTAL_PACKET_LEN // size
+        ) != 0) {
+            fprintf(stderr, "\nError sending the packet: %s\n", pcap_geterr(handler_2));
+        }
+    }
+    void send_virtual_packet() {
+
+        if (pcap_sendpacket(fp,              // Adapter
+            packet,          // buffer with the packet
+            TOTAL_PACKET_LEN // size
+        ) != 0) {
+            fprintf(stderr, "\nError sending the packet: %s\n", pcap_geterr(fp));
+        }
+    }
     void send_packet(int num) {
         ////printf("%d", TOTAL_PACKET_LEN)
         //std::thread t1(pcap_sendpacket, fp, tmp_packet, TOTAL_PACKET_LEN);
@@ -655,25 +820,81 @@ return trans_id;
         // printf("send_success\n");
 
     }
-    int detect_packet(u_char *detected_data = nullptr) {
+    int detect_for_virtual() {
+        pcap_pkthdr* pkt_header;
+        const u_char* pkt_data;
+        struct icmp_header* icmp;
+        struct ip_header* ip;
+        if (1 == pcap_next_ex(fp, &pkt_header, &pkt_data)) 
+        {
+            ip = (ip_header*)(pkt_data + 4);
 
-        pcap_pkthdr *pkt_header;
-        const u_char *pkt_data;
-        for (int j = 0; j < 5; j++) {
-            // printf(" --------\n");
-            if (1 == pcap_next_ex(handler, &pkt_header, &pkt_data)) {
-                int ans = PrintIPHeader(pkt_data);
+            if (pkt_data[52] == 0x08) 
+            {
+                calculate_total_length_virtaul(pkt_data);
+                for(int i=0;i<TOTAL_PACKET_LEN;i++)
+                {
+                    packet[i] = pkt_data[i];}
+                Inverse_the_virtual_and_send();
 
-                if (ans != -1) {
+                    return 1;
+            
+            }
+        }
+        return -1;
+    }
+   
+
+    //none of my business return -1,request from wan is 1,reply from lan then return 2,return 2 just forward ,return 1 check the 
+    int detect_for_icmp(const u_char* detected = nullptr) {
+        pcap_pkthdr* pkt_header;
+        const u_char* pkt_data;
+
+        struct icmp_header* icmp;
+        struct ip_header* ip;
+        if (1 == pcap_next_ex(handler, &pkt_header, &pkt_data)) {
+            ip = (ip_header*)(pkt_data + 14);
+            
+            if (ip->DstAddr == *node2_ip && ip->Protocol ==0x01) {
+                icmp = (struct icmp_header*)(pkt_data + 14 + 20);
+                if (icmp->type == 8) {//8 means request
+                    //request from wan
+                    TOTAL_PACKET_LEN = pkt_data[18] + 14;
+#pragma omp for 
                     for (int i = 0; i < TOTAL_PACKET_LEN; i++) {
                         detected_data[i] = pkt_data[i];
                     }
-                    return ans; // try to send_packet;
+                    detected = pkt_data;
+                    return 1;
+                }
+            }
+
+
+
+        }
+        if (1 == pcap_next_ex(handler_2, &pkt_header, &pkt_data)) {
+            ip = (ip_header*)(pkt_data + 14);
+            if (ip->SrcAddr== *node3_ip && ip->Protocol == 0x01) {
+                icmp = (struct icmp_header*)(pkt_data + 14 + 20);
+                if (icmp->type == 0) {//0 means reply
+                    //reply from wan
+                    TOTAL_PACKET_LEN = pkt_data[18] + 14;
+#pragma omp for 
+                    for (int i = 0; i < TOTAL_PACKET_LEN; i++) {
+                        detected_data[i] = pkt_data[i];
+                    }
+                    detected = pkt_data;
+                    return 2;//lan capture
                 }
             }
         }
         return -1;
-    } 
+    }
+    void recalculate_check_sum_length_icmp() {
+        calculate_total_length(packet);
+        calculate_check_sum_ICMP(packet, TOTAL_PACKET_LEN);
+        calculate_check_sum_ip(packet, TOTAL_PACKET_LEN);
+    }
     //1 is icmp response and 2 is dns response 
     int detect_response(u_char *detected = nullptr) {
         pcap_pkthdr *pkt_header;
@@ -697,12 +918,13 @@ return trans_id;
                     for (int i = 0; i < TOTAL_PACKET_LEN; i++) {
                         detected_data[i] = pkt_data[i];
                     }
+          
                     ans = 1;
                     return ans;
                 }
                 else if(pkt_data[23]==0x11)//response
                 {
-                    ENTERING;
+                
                     if (pkt_data[44] == 0x81 && pkt_data[45] == 0x80) {
 
                         uint16_t total_packet_len = *(uint16_t*)  (pkt_data + 16);
@@ -745,37 +967,23 @@ return trans_id;
             //icmp type =8 you need send a packet type =0
             detected_data[34] = 0;
         }
-        calculate_check_sum_ICMP(detected_data, TOTAL_PACKET_LEN);
+        calculate_total_length(detected_data);
+       calculate_check_sum_ICMP(detected_data, TOTAL_PACKET_LEN);
         calculate_check_sum_ip(detected_data, TOTAL_PACKET_LEN);
     }
-    ~Packet_handler() { pcap_close(fp); }
+    ~Packet_handler() { pcap_close(handler); pcap_close(fp); pcap_close(handler_2); }
     // ans value=0 receive a icmp type=0,value =8 receive a icmp type=8,return
     // value =4,just do the forward,-1 none of my businnes,5 is just forwarding,6 is ping wan
-    void run(int& a, ip_header* ip = nullptr, icmp_header* icmp = nullptr) {
-
-        int ans = detect_packet(detected_data);
-        get_the_information_of_the_packet(detected_data, ip, icmp);
-
-        //if (ans != -1) {
-        //    if (ans == 4) {
-        //        //ans=4 just do the forwarding
-
-        //    
-        //    }
-        //    else {
-        //        Inverse_the_detected_packet_data();
-        //    }
-        //    set_packet(detected_data, TOTAL_PACKET_LEN);
-        //    send_packet(1);
-        //}
-        a = ans;
-
-
-    }
-    void set_the_detected_into_send_packet() {
-        for (int i = 0; i < TOTAL_PACKET_LEN; i++) {
-            packet[i] = detected_data[i];
+    void set_the_detected_into_send_packet(const u_char *detected=nullptr) {
+        packet = detected_data;
+        if (detected != nullptr) {
+            for (int i = 0; i < TOTAL_PACKET_LEN; i++) {
+                packet[i] = detected[i];
+            }
         }
+        //for (int i = 0; i < TOTAL_PACKET_LEN; i++) {
+        //    packet[i] = detected_data[i];
+        //}
     }
     void set_packet(const std::vector<u_char> &data) {
         for (int i = 0; i < data.size(); i++) {
@@ -789,81 +997,14 @@ return trans_id;
             packet[i] = p[i];
         }
     }
-    u_char detected_data[100000];
+    u_char *detected_data=new u_char[1000];
     pcap_if_t* device;
     pcap_t* handler;
     pcap_t* fp;
-
+    pcap_t* handler_2;
     pcap_if_t* alldevs;
     char errbuf[PCAP_ERRBUF_SIZE];
     bool send = false;
 };
 // return value=0 receive a icmp type=0,value =8 receive a icmp type=8,return
 // value =4,just do the forward,else none of my businnes,5 is just forwarding
-int PrintIPHeader(const u_char* packetData) {
-    // it is a router function to detect the data
-
-    // create a router table
-    struct ip_header* ip_protocol;
-
-    // +14 ����������·��
-    ip_protocol = (struct ip_header*)(packetData + 14);
-    SOCKADDR_IN Src_Addr, Dst_Addr = { 0 };
-
-    u_short check_sum = ntohs(ip_protocol->check_sum);
-    int ttl = ip_protocol->time_to_live;
-    int proto = ip_protocol->Protocol;
-
-    Src_Addr.sin_addr.s_addr = ip_protocol->SrcAddr;
-    Dst_Addr.sin_addr.s_addr = ip_protocol->DstAddr;
-
-    if (ip_protocol->Protocol != 1) {
-        return -1; // I only care about ICMP
-    }
-
-    if (ip_protocol->DstAddr != *node2_ip)
-    {
-        
-        if (ip_protocol->SrcAddr == *node2_ip) {
-            return -1; // it is none of my business,包是我发的
-        }
-        else {
-            // check the router
-            if (ip_protocol->DstAddr == *node1_ip ||
-                ip_protocol->DstAddr == *node3_ip ||
-                ip_protocol->DstAddr == *node4_ip) {
-
-                calculate_total_length(packetData);
-                if (ip_protocol->DstAddr == *node1_ip) {
-                    return 5;// 5 is just forwarding
-                }
-             
-                // just do the forward and not change the data;
-                return 4;
-            }
-            else {
-                // not in the router table ,none of my business
-                return -1;
-            }
-        }
-    }
-    printf("源地址: %15s --> ", inet_ntoa(Src_Addr.sin_addr));
-    printf("目标地址: %15s --> ", inet_ntoa(Dst_Addr.sin_addr));
-    printf("\n");
-    int ans = -1;
-    switch (ip_protocol->Protocol) {
-    case 1:
-        ans = PrintICMPHeader(packetData);
-        return ans;
-        break;
-        // case 2: printf("IGMP \n"); break;
-        // case 6: printf("TCP \n");  break;
-        // case 17: printf("UDP \n"); break;
-        // case 89: printf("OSPF \n"); break;
-    default:
-        return -1;
-        break;
-    }
-    return -1;
-}
-

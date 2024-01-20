@@ -19,6 +19,10 @@ public:
     Transmitter_with_wire() = default;
     Transmitter_with_wire(const std::string &path, int _sample_rate) :sample_rate(_sample_rate) {
         bits = Read_bits_from_bin(path);//read the bits from a bin file
+        for (int i = 0; i < 500; ++i) {
+            random_message_bits.emplace_back(0);
+        }
+
         //every 504 bits (63 Bytes) have a crc calculation. A packet has 10 calculation, the last
         // calculation is not full 63 Bytes.
         for (int packet = 0; packet < NUM_TOTAL_PACKETS; ++packet) {
@@ -73,6 +77,7 @@ public:
     std::vector<bool> bits;
     std::vector<int>preamble;
     int transmitted_packet;
+    std::deque<unsigned> random_message_bits;
     std::deque<double> transmittion_buffer;
     int sample_rate;
 

@@ -60,7 +60,9 @@ class MainContentComponent;
 #define PI juce::MathConstants<double>::pi
 
 std::vector<float> in_data;
-
+/// <summary>
+/// 
+/// </summary>
 namespace my_log {
 #include <iostream>
 #include <Windows.h>

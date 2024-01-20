@@ -371,7 +371,7 @@ public:
     int transfer_num = 0;
     int transmitted_packet = 0;
 
-
+    bool add_flag;
     // convert a bit to 4 samples and add the samples to the end fo dest.
     void add_samples_from_a_bit(std::deque<double> &dest, int bit) {
         if (bit == 0) {
