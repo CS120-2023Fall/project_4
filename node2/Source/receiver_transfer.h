@@ -277,6 +277,7 @@ public:
                     }
                 }
                 received_url = t;
+                received_bits.clear();
                 std::cout << "received url: " << received_url << std::endl;
 
                 return valid_data;

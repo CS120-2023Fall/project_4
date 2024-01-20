@@ -128,6 +128,9 @@ public:
     unsigned int query_ID = 69;
     uint32_t ping_ip;
     uint16_t trans_id;
+    bool start_dns = false;
+    u_char ip_4[4];
+    u_char transcation_id[2];
 };
 void KeepSilence(const float* inBuffer, float* outBuffer, int num_samples) {
     for (int i = 0; i < num_samples; i++) {
@@ -149,9 +152,31 @@ void Get_Input_To_Buffer(std::vector<unsigned char>& char_buffer) {
 }
 void MAC_Layer::refresh_MAC(const float* inBuffer, float* outBuffer, int num_samples)
 {
+<<<<<<< HEAD
     if (macState == MAC_States_Set::ICMP_VIRTUAL) {
         handler.detect_for_virtual();
   }
+=======
+    KeepSilence(inBuffer, outBuffer, num_samples);
+    //if (is_host && !start_dns) { Get_Input(); }
+    //if (char_buffer.size() > 4) {
+    //    std::string s;
+    //    for (int i = 0; i < 4;i++) {
+    //        s.push_back(char_buffer[i]);
+    //    }
+    //    if (s == "ping") {
+    //        start_dns = true;
+    //    }
+    //    else {
+    //        char_buffer.clear();
+    //    }
+    //    for (auto& i : char_buffer) {
+    //        std::cout << i;
+    //    }
+    //    
+    //}
+  
+>>>>>>> 92a084e082fc655983fed9dcf4783d9e8743dd54
     if (macState == MAC_States_Set::ICMP_ping_wan)
     {
 
@@ -207,15 +232,6 @@ void MAC_Layer::refresh_MAC(const float* inBuffer, float* outBuffer, int num_sam
 
                 }
             }
-    }
-    if (macState == MAC_States_Set::ICMP_send) {
-        ////handler.Inverse_the_detected_packet_data();
-        handler.set_the_detected_into_send_packet();
-        handler.send_packet(1);
-
-        macState = MAC_States_Set::ICMP_sniff;
-
-        return;
     }
     else if (macState == MAC_States_Set::ICMP_sniff) {
 
@@ -349,11 +365,9 @@ void MAC_Layer::refresh_MAC(const float* inBuffer, float* outBuffer, int num_sam
             mes[1]->setText("Packet received: " + std::to_string(receiver.received_packet), juce::dontSendNotification);
             /////////////////////// delete me 
 
-
+            start_dns = true;
             std::cout << "send" << std::endl;
-           trans_id= handler.send_the_dns_request(receiver.received_url);
-            sequence_num++;
-            std::chrono::time_point<std::chrono::steady_clock> tmp = std::chrono::steady_clock::now();
+        
             //while (1) {
             //    std::chrono::time_point<std::chrono::steady_clock> t1 = std::chrono::steady_clock::now();
             //    double duration = std::chrono::duration<double, std::milli>(t1 - tmp).count();

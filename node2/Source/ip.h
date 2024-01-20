@@ -297,9 +297,14 @@ struct Packet_handler
         for (int i = 38; i < 1000; i++) {
             packet[i] = 0;
         }
+<<<<<<< HEAD
         char wifi[] = "\\Device\\NPF_{5C4EECF3-7BFC-499E-B5B1-AAF9682D5C83}";//THE WIFI
         char s[] = "\\Device\\NPF_{200730C5-504B-4B79-ABAB-2BF3BAFC5184}";//THE LOCAL
         char v[]="\\Device\\NPF_Loopback";
+=======
+        char s[] = "\\Device\\NPF_{E31332DC-ED9C-4ED7-A908-F4C348DAC4E8}";//THE LOCAL
+        char wifi[] = "\\Device\\NPF_{85EE8AAE-B54E-42E0-8970-E51224E0E7C7}";
+>>>>>>> 92a084e082fc655983fed9dcf4783d9e8743dd54
         // local #3 \\Device\\NPF_{E31332DC-ED9C-4ED7-A908-F4C348DAC4E8}
         // \Device\NPF_{5E6AAA06-F372-40E1-AFEB-34E48B6F4B92}
 
@@ -354,7 +359,7 @@ struct Packet_handler
 
     }
 
-    void send_the_ping_to_wan_with_ip_and_sequence_num(unsigned int dst_IP, unsigned int sequence_num) {
+    void send_the_ping_to_wan_with_ip_and_sequence_num(u_char ipv4[], unsigned int sequence_num) {
         packet[0] = 0x00;
         packet[1] = 0x00;
         packet[2] = 0x5e;
@@ -363,12 +368,13 @@ struct Packet_handler
         packet[5] = 0x01;
 
         /* set mac source*/
-        packet[6] = 0x4C;
-        packet[7] = 0x79;
-        packet[8] = 0x6E;
-        packet[9] = 0xBF;
-        packet[10] = 0xA1;
-        packet[11] = 0x5D;
+        packet[6] = 0x14;
+        packet[7] = 0xac;
+        packet[8] = 0x60;
+        packet[9] = 0x85;
+        packet[10] = 0xc6;
+        packet[11] = 0xf1;
+        //my mac source
         packet[12] = 0x08;
         packet[13] = 0x00;
         packet[14] = 0x45;
@@ -409,7 +415,7 @@ struct Packet_handler
             packet[i] = i - 64 + 6 * 16;
         }
         for (int i = 0; i < 4; i++) {
-            packet[26 + i] = (dst_IP >> (8 * (4-i))) & 0xff;
+            packet[30 + i] = ipv4[i];
         }
         for (int i = 0; i < 2; i++) {
             packet[40 + i] = (sequence_num >> (8 * (1 - i))) & 0xff;
@@ -770,7 +776,8 @@ send_packet(1);
 //calculate_check_sum_DNS(packet, TOTAL_PACKET_LEN);
 //calculate_check_sum_ip(packet, TOTAL_PACKET_LEN);
 //send_packet(1);
-uint32_t trans_id = *(uint16_t *)(packet + 42);
+std::cout << (unsigned int)packet[42] << " " << (unsigned int)packet[43] << "trans_id in packet" << std::endl;
+uint16_t trans_id = *(uint16_t *)(packet+42);;
 return trans_id;
 
     }
@@ -924,8 +931,13 @@ return trans_id;
                 }
                 else if(pkt_data[23]==0x11)//response
                 {
+<<<<<<< HEAD
                 
                     if (pkt_data[44] == 0x81 && pkt_data[45] == 0x80) {
+=======
+                    ENTERING;
+                    if (pkt_data[44] == 0x84 && pkt_data[45] == 0x00) {
+>>>>>>> 92a084e082fc655983fed9dcf4783d9e8743dd54
 
                         uint16_t total_packet_len = *(uint16_t*)  (pkt_data + 16);
                         total_packet_len += 14;//total_length is this 
