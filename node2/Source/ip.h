@@ -297,14 +297,9 @@ struct Packet_handler
         for (int i = 38; i < 1000; i++) {
             packet[i] = 0;
         }
-<<<<<<< HEAD
         char wifi[] = "\\Device\\NPF_{5C4EECF3-7BFC-499E-B5B1-AAF9682D5C83}";//THE WIFI
         char s[] = "\\Device\\NPF_{200730C5-504B-4B79-ABAB-2BF3BAFC5184}";//THE LOCAL
         char v[]="\\Device\\NPF_Loopback";
-=======
-        char s[] = "\\Device\\NPF_{E31332DC-ED9C-4ED7-A908-F4C348DAC4E8}";//THE LOCAL
-        char wifi[] = "\\Device\\NPF_{85EE8AAE-B54E-42E0-8970-E51224E0E7C7}";
->>>>>>> 92a084e082fc655983fed9dcf4783d9e8743dd54
         // local #3 \\Device\\NPF_{E31332DC-ED9C-4ED7-A908-F4C348DAC4E8}
         // \Device\NPF_{5E6AAA06-F372-40E1-AFEB-34E48B6F4B92}
 
@@ -931,13 +926,8 @@ return trans_id;
                 }
                 else if(pkt_data[23]==0x11)//response
                 {
-<<<<<<< HEAD
                 
                     if (pkt_data[44] == 0x81 && pkt_data[45] == 0x80) {
-=======
-                    ENTERING;
-                    if (pkt_data[44] == 0x84 && pkt_data[45] == 0x00) {
->>>>>>> 92a084e082fc655983fed9dcf4783d9e8743dd54
 
                         uint16_t total_packet_len = *(uint16_t*)  (pkt_data + 16);
                         total_packet_len += 14;//total_length is this 
